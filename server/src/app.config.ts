@@ -1,14 +1,19 @@
 import config from "@colyseus/tools";
 import { monitor } from "@colyseus/monitor";
 import { playground } from "@colyseus/playground";
+import { auth } from "@colyseus/auth";
 
 /**
  * Import your Room files
  */
+
 import { WritingRoom } from "./rooms/WritingRoom";
+
+import "../../config/auth"; // Ensure auth config is loaded
 
 export default config({
 
+    
     initializeGameServer: (gameServer) => {
         /**
          * Define your room handlers:
@@ -40,6 +45,9 @@ export default config({
          * Read more: https://docs.colyseus.io/tools/monitor/#restrict-access-to-the-panel-using-a-password
          */
         app.use("/monitor", monitor());
+
+        //mount auth routes
+        app.use(auth.prefix, auth.routes());
     },
 
 

@@ -6,10 +6,6 @@ generator client {
     provider = "prisma-client-js"
 }
 
-generator kysely {
-    provider = "prisma-kysely"
-}
-
 datasource db {
     provider = "sqlite"
     url      = env("DATABASE_URL")
@@ -97,4 +93,16 @@ model Vote {
 
     @@unique([submissionId, voterId]) // One vote per submission per voter
     @@map("votes")
+}
+
+model User {
+    id       String  @id @default(cuid())
+    email    String  @unique
+    password String // This will store the hashed password
+    name     String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("users")
 }

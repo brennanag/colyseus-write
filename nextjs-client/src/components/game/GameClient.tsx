@@ -17,8 +17,6 @@ interface GameClientProps {
     authToken: string;
   };
 }
-
-// 🟢 ADD THIS TYPE - This matches your server's state structure
 interface ColyseusGameState {
   phase: string;
   players: Map<string, any>;
@@ -65,21 +63,27 @@ export function GameClient({ user }: GameClientProps) {
           console.log('Time update:', data);
         });
 
-        // 🎯 SIMPLE SOLUTION: Use onStateChange with proper typing
         room.onStateChange((state: ColyseusGameState) => {
-          console.log('State changed, converting to JSON...');
-          // Convert to plain JavaScript object for React
-          const plainState = {
-            ...state,
-            players: Object.fromEntries(state.players.entries())
-          };
-          setGameState(plainState as any);
-        });
+            console.log('State changed, converting to JSON...');
+            
+            // Convert Colyseus MapSchema to regular object
+            const playersObject = state.players ? Object.fromEntries(state.players.$items.entries()) : {};
+          
+            const plainState = {
+              ...state,
+              players: playersObject
+            };
+            setGameState(plainState as any);
+          });
 
         // Set initial state
+        console.log('DEBUG: Full room.state:', room.state);
+        console.log('DEBUG: room.state keys:', Object.keys(room.state));
+        
+        // Safe initial state with fallback
         const initialState = {
           ...room.state,
-          players: Object.fromEntries(room.state.players.entries())
+          players: room.state.players ? Object.fromEntries(room.state.players.entries()) : {}
         };
         setGameState(initialState as any);
 
