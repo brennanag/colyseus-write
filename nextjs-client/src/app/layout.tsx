@@ -1,5 +1,4 @@
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
-import { AuthProvider } from '../contexts/AuthContext';
+import { Providers } from './providers';
 
 export default function RootLayout({
   children,
@@ -9,11 +8,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ChakraProvider value={defaultSystem}>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ChakraProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
