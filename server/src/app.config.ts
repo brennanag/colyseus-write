@@ -9,7 +9,7 @@ import { auth } from "@colyseus/auth";
 
 import { WritingRoom } from "./rooms/WritingRoom";
 
-import "../../config/auth"; // Ensure auth config is loaded
+import "./config/auth.ts";  // Ensure auth config is loaded
 
 export default config({
 

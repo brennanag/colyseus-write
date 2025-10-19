@@ -40,10 +40,10 @@ export class WritingRoom extends Room<WritingGameState> {
       
       const player = this.state.players.get(client.sessionId);
       if (player) {
-        console.log('Player.isReady ', player.isReady,'Updated player', player.name, 'to ready');
+        // console.log('Player.isReady ', player.isReady,'Updated player', player.name, 'to ready');
 
         player.isReady = true;
-        console.log('Player.isReady ', player.isReady,'Updated player', player.name, 'to ready');
+        // console.log('Player.isReady ', player.isReady,'Updated player', player.name, 'to ready');
         
         // Broadcast the state change to ALL clients
         this.state.players.set(client.sessionId, player);
