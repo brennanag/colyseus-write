@@ -13,6 +13,21 @@ export class WritingRoom extends Room<WritingGameState> {
     "In a city where everyone has a superpower, except me..."
   ];
 
+    // ADD THIS AUTH METHOD
+    async onAuth(client: Client, options: any) {
+      console.log("Auth attempt with token:", options.token);
+      
+      // Simple token validation - make sure this matches what your client sends
+      if (options.token === "USER_DUMMY_TOKEN") {
+        return { 
+          userId: "user_" + client.sessionId, 
+          username: "Player" 
+        };
+      }
+      
+      throw new Error("Authentication failed");
+    }
+
   onCreate(options: any) {
     this.setState(new WritingGameState());
     
@@ -36,12 +51,12 @@ export class WritingRoom extends Room<WritingGameState> {
     // });
   }
 
-  onJoin(client: Client, options: any) {
-    console.log(client.sessionId, "joined writing room!");
+  onJoin(client: Client, options: any, auth: any) {
+    console.log(`${auth.username} (${auth.userId}) has joined the room!`);
 
     const player = new Player();
-    player.id = client.sessionId;
-    player.name = `Writer${this.clients.length}`;
+    player.id = auth.userId;  // Use the authenticated user ID
+    player.name = auth.username;
     
     this.state.players.set(client.sessionId, player);
     

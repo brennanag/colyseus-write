@@ -717,21 +717,83 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 var _colyseusJs = require("colyseus.js");
 const client = new (0, _colyseusJs.Client)("ws://localhost:2567");
 let room = null;
-// Phase display management
-function showPhase(phaseName) {
-    // Hide all phases
-    document.querySelectorAll('.phase').forEach((phase)=>{
-        phase.classList.remove('active');
-    });
-    // Show the active phase
-    const activePhase = document.getElementById(phaseName + 'Phase');
-    if (activePhase) activePhase.classList.add('active');
+let currentUser = null;
+// Auth state management
+function showAuthSection() {
+    document.getElementById('authSection').classList.remove('hidden');
+    document.getElementById('gameSection').classList.add('hidden');
 }
-// Connection and basic setup
-async function connectToGame() {
+function showGameSection() {
+    document.getElementById('authSection').classList.add('hidden');
+    document.getElementById('gameSection').classList.remove('hidden');
+}
+function updateUserInfo(user) {
+    currentUser = user;
+    document.getElementById('userName').textContent = user.username;
+}
+// Sign in function
+async function signIn() {
+    const playerNameInput = document.getElementById('playerName');
+    const tokenInput = document.getElementById('authToken');
+    const authStatus = document.getElementById('authStatus');
+    const playerName = playerNameInput.value.trim();
+    const authToken = tokenInput.value.trim();
+    if (!playerName) {
+        authStatus.textContent = "Please enter your name";
+        authStatus.style.color = "red";
+        return;
+    }
+    if (!authToken) {
+        authStatus.textContent = "Please enter an auth token";
+        authStatus.style.color = "red";
+        return;
+    }
+    try {
+        authStatus.textContent = "Signing in...";
+        authStatus.style.color = "blue";
+        // Store user info locally
+        const userInfo = {
+            username: playerName,
+            userId: "user_" + Date.now() // In real app, this would come from server
+        };
+        // Store for auto-login
+        localStorage.setItem('gameAuthToken', authToken);
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        // Connect to game with auth
+        await connectToGame(authToken, userInfo);
+        // Update UI for authenticated state
+        updateUserInfo(userInfo);
+        showGameSection();
+        authStatus.textContent = "";
+    } catch (error) {
+        authStatus.textContent = "Sign in failed: " + error.message;
+        authStatus.style.color = "red";
+        // Clear invalid stored data
+        localStorage.removeItem('gameAuthToken');
+        localStorage.removeItem('userInfo');
+    }
+}
+// Sign out function
+function signOut() {
+    if (room) {
+        room.leave();
+        room = null;
+    }
+    currentUser = null;
+    // Clear stored tokens
+    localStorage.removeItem('gameAuthToken');
+    localStorage.removeItem('userInfo');
+    // Show auth section
+    showAuthSection();
+}
+// Updated connectToGame function
+async function connectToGame(authToken, userInfo) {
     try {
         document.getElementById('status').textContent = "Connecting...";
-        room = await client.joinOrCreate("writing_room");
+        room = await client.joinOrCreate("writing_room", {
+            token: authToken,
+            username: userInfo.username // Send username to server too
+        });
         document.getElementById('status').textContent = `Connected to room: ${room.id}`;
         // Set up room listeners
         setupRoomListeners();
@@ -741,7 +803,34 @@ async function connectToGame() {
     } catch (error) {
         document.getElementById('status').textContent = "Connection failed";
         console.error("Connection failed:", error);
+        throw error; // Re-throw so signIn can handle it
     }
+}
+// Check for existing session on page load
+function checkExistingSession() {
+    const storedToken = localStorage.getItem('gameAuthToken');
+    const storedUser = localStorage.getItem('userInfo');
+    if (storedToken && storedUser) {
+        // Auto-signin with stored credentials
+        const userInfo = JSON.parse(storedUser);
+        updateUserInfo(userInfo);
+        connectToGame(storedToken, userInfo).then(()=>showGameSection()).catch(()=>{
+            // Fallback to auth if auto-signin fails
+            showAuthSection();
+            localStorage.removeItem('gameAuthToken');
+            localStorage.removeItem('userInfo');
+        });
+    } else showAuthSection();
+}
+// Phase display management (YOUR EXISTING FUNCTION - PRESERVED)
+function showPhase(phaseName) {
+    // Hide all phases
+    document.querySelectorAll('.phase').forEach((phase)=>{
+        phase.classList.remove('active');
+    });
+    // Show the active phase
+    const activePhase = document.getElementById(phaseName + 'Phase');
+    if (activePhase) activePhase.classList.add('active');
 }
 function setupRoomListeners() {
     // Phase changes
@@ -785,14 +874,19 @@ function updatePlayerList() {
         playerList.appendChild(playerDiv);
     });
 }
-// Button handlers
+// Event listeners
+document.getElementById('signInBtn').addEventListener('click', signIn);
+document.getElementById('signOutBtn').addEventListener('click', signOut);
+// Button handlers (YOUR EXISTING HANDLERS - PRESERVED)
 document.getElementById('readyBtn').addEventListener('click', ()=>{
-    room.send("player_ready");
-    document.getElementById('readyBtn').textContent = "Waiting for others...";
-    document.getElementById('readyBtn').disabled = true;
+    if (room) {
+        room.send("player_ready");
+        document.getElementById('readyBtn').textContent = "Waiting for others...";
+        document.getElementById('readyBtn').disabled = true;
+    }
 });
-// Start the connection when page loads
-connectToGame();
+// Start the app with session check instead of auto-connect
+checkExistingSession();
 
 },{"colyseus.js":"l6SoD"}],"l6SoD":[function(require,module,exports,__globalThis) {
 var Buffer = require("62394090e3d8ae5f").Buffer;
