@@ -1,0 +1,100 @@
+// This is your Prisma schema file
+// It defines your database connection and data models
+
+// 1. DATABASE CONNECTION
+generator client {
+    provider = "prisma-client-js"
+}
+
+generator kysely {
+    provider = "prisma-kysely"
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = env("DATABASE_URL")
+}
+
+// 2. DATA MODELS
+model Player {
+    id          String       @id @default(cuid())
+    createdAt   DateTime     @default(now())
+    username    String       @unique
+    email       String?      @unique
+    submissions Submission[]
+
+    // Relationships
+    games GamePlayer[]
+
+    @@map("players")
+}
+
+model Game {
+    id           String   @id @default(cuid())
+    createdAt    DateTime @default(now())
+    status       String // "lobby", "writing", "voting", "completed"
+    storyPrompt  String
+    currentStory String?
+
+    // Relationships
+    players GamePlayer[]
+    rounds  Round[]
+
+    @@map("games")
+}
+
+model GamePlayer {
+    id       String @id @default(cuid())
+    playerId String
+    gameId   String
+
+    // Relationships
+    player Player @relation(fields: [playerId], references: [id])
+    game   Game   @relation(fields: [gameId], references: [id])
+
+    @@unique([playerId, gameId]) // A player can only join a game once
+    @@map("game_players")
+}
+
+model Round {
+    id          String   @id @default(cuid())
+    createdAt   DateTime @default(now())
+    gameId      String
+    roundNumber Int
+    prompt      String
+
+    // Relationships
+    game        Game         @relation(fields: [gameId], references: [id])
+    submissions Submission[]
+
+    @@map("rounds")
+}
+
+model Submission {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    roundId   String
+    playerId  String
+    content   String
+
+    // Relationships
+    round  Round  @relation(fields: [roundId], references: [id])
+    player Player @relation(fields: [playerId], references: [id])
+    votes  Vote[]
+
+    @@unique([roundId, playerId]) // One submission per player per round
+    @@map("submissions")
+}
+
+model Vote {
+    id           String   @id @default(cuid())
+    createdAt    DateTime @default(now())
+    submissionId String
+    voterId      String // The player who cast the vote
+
+    // Relationships
+    submission Submission @relation(fields: [submissionId], references: [id])
+
+    @@unique([submissionId, voterId]) // One vote per submission per voter
+    @@map("votes")
+}
