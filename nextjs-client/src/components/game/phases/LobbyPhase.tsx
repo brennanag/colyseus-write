@@ -5,13 +5,13 @@ import {
 import { Player } from '@/lib/types';
 
 interface LobbyPhaseProps {
-  players: Map<string, Player>;
-  onReady: () => void;
+    players: { [sessionId: string]: Player };
+    onReady: () => void;
 }
 
 export function LobbyPhase({ players, onReady }: LobbyPhaseProps) {
   
-    const playersArray = Array.from(players.values());
+    const playersArray = Object.values(players);
 
     return (
     <Box>

@@ -37,7 +37,7 @@ export interface GameState {
     setupStage: SetupStage;
     currentWritingRound: number;
     totalWritingRounds: number;
-    players: Map<string, Player>; // Change from Player[] to Map<string, Player>
+    players: { [sessionId: string]: Player };
     contributions: WritingContribution[];
     currentStory: string;
     chatMessages: ChatMessage[];

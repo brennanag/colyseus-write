@@ -18,22 +18,27 @@ interface GameClientProps {
   };
 }
 
+// 🟢 ADD THIS TYPE - This matches your server's state structure
+interface ColyseusGameState {
+  phase: string;
+  players: Map<string, any>;
+  [key: string]: any;
+}
+
 export function GameClient({ user }: GameClientProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [room, setRoom] = useState<Room | null>(null);
+  const [room, setRoom] = useState<Room<ColyseusGameState> | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
 
-  // Connect to Colyseus server - NO MOCK DATA
-// Replace the entire useEffect in GameClient.tsx:
-useEffect(() => {
+  useEffect(() => {
     const client = new Client('ws://localhost:2567');
-    let currentRoom: Room | null = null;
+    let currentRoom: Room<ColyseusGameState> | null = null;
     
     const connectToRoom = async () => {
       try {
         console.log('Connecting to server...');
         
-        const room = await client.joinOrCreate('writing_room', {
+        const room = await client.joinOrCreate<ColyseusGameState>('writing_room', {
           username: user.username,
           token: user.authToken
         });
@@ -42,66 +47,64 @@ useEffect(() => {
         setRoom(room);
         setConnectionStatus('connected');
         console.log('Connected to room:', room.roomId);
-  
-        // REAL SERVER LISTENERS
-        room.onStateChange((state) => {
-          console.log('State changed:', state);
-          setGameState(state as any);
-        });
-  
-        room.onMessage('phase_changed', (data) => {
+
+        // 🟢 KEEP YOUR EXISTING MESSAGE LISTENERS
+        room.onMessage('phase_changed', (data: any) => {
           console.log('Phase changed:', data);
         });
-  
-        room.onMessage('player_joined', (data) => {
+
+        room.onMessage('player_joined', (data: any) => {
           console.log('Player joined:', data);
         });
-  
-        room.onMessage('player_left', (data) => {
+
+        room.onMessage('player_left', (data: any) => {
           console.log('Player left:', data);
         });
-  
-        room.onMessage('time_update', (data) => {
+
+        room.onMessage('time_update', (data: any) => {
           console.log('Time update:', data);
         });
-  
-        room.onMessage('player_ready', (data) => {
-            console.log('Player ready event received:', data);
-            // Force a state refresh or update specific player
-            if (gameState && gameState.players) {
-              const player = gameState.players.get(data.playerId);
-              if (player) {
-                player.isReady = true;
-                // Force React update
-                setGameState({...gameState});
-              }
-            }
-          });
+
+        // 🎯 SIMPLE SOLUTION: Use onStateChange with proper typing
+        room.onStateChange((state: ColyseusGameState) => {
+          console.log('State changed, converting to JSON...');
+          // Convert to plain JavaScript object for React
+          const plainState = {
+            ...state,
+            players: Object.fromEntries(state.players.entries())
+          };
+          setGameState(plainState as any);
+        });
+
+        // Set initial state
+        const initialState = {
+          ...room.state,
+          players: Object.fromEntries(room.state.players.entries())
+        };
+        setGameState(initialState as any);
 
         room.onLeave((code) => {
           console.log('Left room:', code);
           setConnectionStatus('disconnected');
         });
-  
+
       } catch (error) {
         console.error('Connection failed:', error);
         setConnectionStatus('disconnected');
       }
     };
-  
+
     connectToRoom();
-  
-    // PROPER CLEANUP - this runs before the next effect
+
     return () => {
       console.log('Cleaning up connection...');
       if (currentRoom) {
         currentRoom.leave();
-        console.log('Left room:', currentRoom.roomId);
       }
     };
-  }, [user]); // Only reconnect if user changes
+  }, [user]);
 
-  // REAL SERVER ACTIONS - NO MOCK ACTIONS
+  // REAL SERVER ACTIONS
   const handleReady = () => {
     room?.send('player_ready');
   };
@@ -148,8 +151,8 @@ useEffect(() => {
           <WritingPhase 
             currentRound={gameState.currentWritingRound}
             totalRounds={gameState.totalWritingRounds}
-            prompt={gameState.currentStory} // This should come from server
-            timeRemaining={300} // This should come from server via time_update
+            prompt={gameState.currentStory}
+            timeRemaining={300}
             onSubmitWriting={handleSubmitWriting}
           />
         );
@@ -180,15 +183,13 @@ useEffect(() => {
 
   return (
     <Box>
-      {/* Debug Bar - Shows REAL server data only */}
       <DebugBar
-        roomId={room?.roomId || null} // Change from room?.id
-        playerCount={gameState?.players.size || 0}
+        roomId={room?.roomId || null}
+        playerCount={gameState?.players ? Object.keys(gameState.players).length : 0}
         currentPhase={gameState?.phase || 'connecting'}
         connectionStatus={connectionStatus}
       />
 
-      {/* Game Content - REAL server state only */}
       <Box maxWidth="6xl" margin="0 auto" p={6}>
         <VStack gap={6} align="stretch">
           {renderCurrentPhase()}

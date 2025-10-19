@@ -34,13 +34,16 @@ export class WritingRoom extends Room<WritingGameState> {
     console.log("Writing room created!", this.roomId);
 
     // Phase management
+    // Player Ready message handler
     this.onMessage("player_ready", (client) => {
       console.log('Player ready received from:', client.sessionId);
       
       const player = this.state.players.get(client.sessionId);
       if (player) {
+        console.log('Player.isReady ', player.isReady,'Updated player', player.name, 'to ready');
+
         player.isReady = true;
-        console.log('Updated player', player.name, 'to ready');
+        console.log('Player.isReady ', player.isReady,'Updated player', player.name, 'to ready');
         
         // Broadcast the state change to ALL clients
         this.state.players.set(client.sessionId, player);
@@ -51,6 +54,9 @@ export class WritingRoom extends Room<WritingGameState> {
           playerName: player.name,
           isReady: true
         });
+      }
+      else {
+        console.log('Player not found for sessionId:', client.sessionId);
       }
     });
 

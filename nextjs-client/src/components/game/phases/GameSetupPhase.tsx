@@ -9,7 +9,7 @@ import { Player, SetupStage } from '@/lib/types';
 interface GameSetupPhaseProps {
   currentStage: SetupStage;
   onStageComplete: (stage: SetupStage, data: any) => void;
-  players: Map<string, Player>;
+  players: { [sessionId: string]: Player };
 }
 
 export function GameSetupPhase({ currentStage, onStageComplete }: GameSetupPhaseProps) {
