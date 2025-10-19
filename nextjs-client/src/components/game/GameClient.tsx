@@ -8,10 +8,18 @@ import { WritingPhase } from './phases/WritingPhase';
 import { EditingPhase } from './phases/EditingPhase';
 import { ReadingPhase } from './phases/ReadingPhase';
 
-export function GameClient() {
+interface GameClientProps {
+  user: {
+    username: string;
+    userId: string;
+    authToken: string;
+  };
+}
+
+export function GameClient({ user }: GameClientProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
 
-  // Mock data for development
+  // Mock data for development - we'll replace this with real server connection later
   useEffect(() => {
     const mockGameState: GameState = {
       phase: 'lobby',
@@ -19,18 +27,18 @@ export function GameClient() {
       currentWritingRound: 1,
       totalWritingRounds: 3,
       players: [
-        { id: '1', name: 'Player 1', isReady: true, isHost: true },
-        { id: '2', name: 'Player 2', isReady: false, isHost: false }
+        { id: user.userId, name: user.username, isReady: false, isHost: true },
+        { id: '2', name: 'Other Player', isReady: true, isHost: false }
       ],
       contributions: [],
       currentStory: '',
       chatMessages: []
     };
     setGameState(mockGameState);
-  }, []);
+  }, [user]);
 
   const renderCurrentPhase = () => {
-    if (!gameState) return <Text>Loading...</Text>;
+    if (!gameState) return <Text>Loading game...</Text>;
 
     switch (gameState.phase) {
       case 'lobby':
@@ -92,7 +100,7 @@ export function GameClient() {
   };
 
   return (
-    <Box maxWidth="6xl" margin="0 auto" padding={6}>
+    <Box maxWidth="6xl" margin="0 auto">
       <VStack gap={6} align="stretch">
         {renderCurrentPhase()}
       </VStack>
