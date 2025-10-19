@@ -24,68 +24,82 @@ export function GameClient({ user }: GameClientProps) {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
 
   // Connect to Colyseus server - NO MOCK DATA
-  useEffect(() => {
+// Replace the entire useEffect in GameClient.tsx:
+useEffect(() => {
     const client = new Client('ws://localhost:2567');
+    let currentRoom: Room | null = null;
     
     const connectToRoom = async () => {
       try {
-        console.log('Connecting to server with:', { 
-          username: user.username, 
-          token: user.authToken 
-        });
+        console.log('Connecting to server...');
         
         const room = await client.joinOrCreate('writing_room', {
           username: user.username,
           token: user.authToken
         });
         
+        currentRoom = room;
         setRoom(room);
         setConnectionStatus('connected');
-        console.log('Connected to room:', room.id);
-
-        // REAL SERVER LISTENERS - NO MOCK FALLBACKS
+        console.log('Connected to room:', room.roomId);
+  
+        // REAL SERVER LISTENERS
         room.onStateChange((state) => {
           console.log('State changed:', state);
           setGameState(state as any);
         });
-
+  
         room.onMessage('phase_changed', (data) => {
           console.log('Phase changed:', data);
         });
-
+  
         room.onMessage('player_joined', (data) => {
           console.log('Player joined:', data);
         });
-
+  
         room.onMessage('player_left', (data) => {
           console.log('Player left:', data);
         });
-
+  
         room.onMessage('time_update', (data) => {
           console.log('Time update:', data);
         });
+  
+        room.onMessage('player_ready', (data) => {
+            console.log('Player ready event received:', data);
+            // Force a state refresh or update specific player
+            if (gameState && gameState.players) {
+              const player = gameState.players.get(data.playerId);
+              if (player) {
+                player.isReady = true;
+                // Force React update
+                setGameState({...gameState});
+              }
+            }
+          });
 
         room.onLeave((code) => {
           console.log('Left room:', code);
           setConnectionStatus('disconnected');
         });
-
+  
       } catch (error) {
         console.error('Connection failed:', error);
         setConnectionStatus('disconnected');
-        // NO MOCK DATA - if connection fails, we show error state
       }
     };
-
+  
     connectToRoom();
-
-    // Cleanup on unmount
+  
+    // PROPER CLEANUP - this runs before the next effect
     return () => {
-      if (room) {
-        room.leave();
+      console.log('Cleaning up connection...');
+      if (currentRoom) {
+        currentRoom.leave();
+        console.log('Left room:', currentRoom.roomId);
       }
     };
-  }, [user]);
+  }, [user]); // Only reconnect if user changes
 
   // REAL SERVER ACTIONS - NO MOCK ACTIONS
   const handleReady = () => {
@@ -168,7 +182,7 @@ export function GameClient({ user }: GameClientProps) {
     <Box>
       {/* Debug Bar - Shows REAL server data only */}
       <DebugBar
-        roomId={room?.id || null}
+        roomId={room?.roomId || null} // Change from room?.id
         playerCount={gameState?.players.size || 0}
         currentPhase={gameState?.phase || 'connecting'}
         connectionStatus={connectionStatus}

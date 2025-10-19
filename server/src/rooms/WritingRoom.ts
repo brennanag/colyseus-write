@@ -15,13 +15,13 @@ export class WritingRoom extends Room<WritingGameState> {
 
     // ADD THIS AUTH METHOD
     async onAuth(client: Client, options: any) {
-      console.log("Auth attempt with token:", options.token);
+      console.log("Auth attempt with token:", options);
       
       // Simple token validation - make sure this matches what your client sends
       if (options.token === "USER_DUMMY_TOKEN") {
         return { 
           userId: "user_" + client.sessionId, 
-          username: "Player" 
+          username: options.username
         };
       }
       
@@ -35,7 +35,23 @@ export class WritingRoom extends Room<WritingGameState> {
 
     // Phase management
     this.onMessage("player_ready", (client) => {
-      this.handlePlayerReady(client);
+      console.log('Player ready received from:', client.sessionId);
+      
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.isReady = true;
+        console.log('Updated player', player.name, 'to ready');
+        
+        // Broadcast the state change to ALL clients
+        this.state.players.set(client.sessionId, player);
+        
+        // Optional: Send a specific message about the ready state
+        this.broadcast("player_ready_updated", {
+          playerId: client.sessionId,
+          playerName: player.name,
+          isReady: true
+        });
+      }
     });
 
     this.onMessage("submit_writing", (client, data) => {
