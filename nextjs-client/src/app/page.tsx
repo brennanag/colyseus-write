@@ -1,109 +1,47 @@
 'use client';
-import { useState, useEffect } from 'react';
-import {
-  Box,
-  VStack,
-  Heading,
-  Text,
-  Button,
-} from '@chakra-ui/react';
-import { AuthSection } from '@/components/auth/AuthSection';
-import { GameClient } from '@/components/game/GameClient';
 
-interface User {
-  username: string;
-  userId: string;
-  authToken: string;
-}
+import { useEffect, useState } from 'react';
+import { Box, Button, VStack, Text } from '@chakra-ui/react';
+import { Client, Room } from 'colyseus.js';
+import { useAuth } from '../contexts/AuthContext';
+import AuthForms from '../components/AuthForms';
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, token } = useAuth();
+  const [client, setClient] = useState<Client | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
 
-  // Check for existing session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('writing-game-user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        localStorage.removeItem('writing-game-user');
-      }
-    }
-    setLoading(false);
+    const gameClient = new Client('ws://localhost:2567');
+    setClient(gameClient);
   }, []);
 
-  const handleSignIn = (playerName: string, authToken: string) => {
-    const userData: User = {
-      username: playerName,
-      userId: `user_${Date.now()}`,
-      authToken: authToken,
-    };
+  const joinRoom = async () => {
+    if (!client || !user) return;
     
-    setUser(userData);
-    localStorage.setItem('writing-game-user', JSON.stringify(userData));
+    try {
+      const gameRoom = await client.joinOrCreate('writing_room', {
+        token // Send authentication token to server
+      });
+      setRoom(gameRoom);
+    } catch (error) {
+      console.error('Failed to join room:', error);
+    }
   };
 
-  const handleSignOut = () => {
-    setUser(null);
-    localStorage.removeItem('writing-game-user');
-  };
-
-  if (loading) {
-    return (
-      <Box minHeight="100vh" display="flex" alignItems="center" justifyContent="center">
-        <Text>Loading...</Text>
-      </Box>
-    );
+  if (!user) {
+    return <AuthForms />;
   }
 
   return (
-    <Box minHeight="100vh" bg="bg.canvas">
-      {user ? (
-        // Game View (when authenticated)
-        <Box>
-          {/* Header with user info */}
-          <Box bg="bg.subtle" borderBottom="1px" borderColor="border.subtle">
-            <Box maxWidth="6xl" margin="0 auto" p={4}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <VStack align="start" gap={1}>
-                  <Heading size="lg">📝 StoryCraft</Heading>
-                  <Text color="fg.muted" fontSize="sm">
-                    Welcome, {user.username}!
-                  </Text>
-                </VStack>
-                <Button variant="outline" onClick={handleSignOut}>
-                  Sign Out
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Game Content */}
-          <Box p={6}>
-            <GameClient user={user} />
-          </Box>
-        </Box>
-      ) : (
-        // Auth View (when not authenticated)
-        <Box 
-          minHeight="100vh" 
-          display="flex" 
-          alignItems="center" 
-          justifyContent="center"
-          p={6}
-        >
-          <VStack gap={8} width="100%">
-            <VStack gap={2} textAlign="center">
-              <Heading size="2xl">📝 StoryCraft</Heading>
-              <Text fontSize="xl" color="fg.muted">
-                Create amazing stories together
-              </Text>
-            </VStack>
-            <AuthSection onSignIn={handleSignIn} />
-          </VStack>
-        </Box>
-      )}
+    <Box minHeight="100vh" p={8}>
+      <VStack gap={4}>
+        <Text>Welcome, {user.name || user.email}!</Text>
+        <Button onClick={joinRoom} colorPalette="blue">
+          Join Writing Room
+        </Button>
+        {room && <Text>Connected to room: {room.roomId}</Text>}
+      </VStack>
     </Box>
   );
 }

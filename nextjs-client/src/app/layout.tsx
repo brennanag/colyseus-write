@@ -1,16 +1,20 @@
-// src/app/layout.tsx
-import { Providers } from './providers'
+import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
+import { AuthProvider } from '../contexts/AuthContext';
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
       <body>
-        <Providers>{children}</Providers>
+        <ChakraProvider value={defaultSystem}>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ChakraProvider>
       </body>
     </html>
-  )
+  );
 }
