@@ -1,6 +1,10 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { auth } from '@colyseus/auth';
+
+// Initialize auth client
+auth.setEndpoint('http://localhost:2567');
 
 interface User {
   id: string;
@@ -10,56 +14,59 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const currentUser = auth.user;
+        if (currentUser) {
+          setUser(currentUser);
+        }
+      } catch (error) {
+        console.log('No existing auth session');
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('http://localhost:2567/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) throw new Error('Login failed');
+    const response = await auth.signIn({ email, password });
     
-    const data = await response.json();
-    setUser(data.user);
-    setToken(data.token);
-    localStorage.setItem('authToken', data.token); // Optional: persist token
+    if (!response.user) {
+      throw new Error('Login failed');
+    }
+    
+    setUser(response.user);
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await fetch('http://localhost:2567/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
-    });
-
-    if (!response.ok) throw new Error('Registration failed');
+    const response = await auth.signUp({ email, password, name });
     
-    const data = await response.json();
-    setUser(data.user);
-    setToken(data.token);
-    localStorage.setItem('authToken', data.token); // Optional: persist token
+    if (!response.user) {
+      throw new Error('Registration failed');
+    }
+    
+    setUser(response.user);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await auth.signOut();
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('authToken');
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
