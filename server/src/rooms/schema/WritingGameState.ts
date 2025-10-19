@@ -1,11 +1,10 @@
 import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
 export class Player extends Schema {
-  @type("string") id: string;
-  @type("string") name: string;
-  @type("boolean") isReady: boolean = false;
-  @type("string") currentSubmission: string = "";
-  @type("string") vote: string = ""; // playerId they voted for
+  @type('string') playerId: string;
+  @type('string') playerName: string;
+  @type('string') email: string;
+  @type('boolean') isAuthenticated: boolean;
 }
 
 export class WritingGameState extends Schema {

@@ -5,6 +5,8 @@ export class Player extends Schema {
   @type("number") x: number = 100;
   @type("number") y: number = 100;
   @type("string") name: string = "Player";
+  @type("string") email: string = "";
+  @type("boolean") isAuthenticated: boolean = false;
 }
 
 export class MyRoomState extends Schema {
