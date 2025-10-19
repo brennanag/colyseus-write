@@ -22,20 +22,36 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [error, setError] = useState('');
   const { register } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+ // In RegisterForm.tsx - add basic email validation
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      await register(email, password, name);
-      onSuccess();
-    } catch (err) {
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    setError('Please enter a valid email address');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    await register(email, password, name);
+    onSuccess();
+  } catch (err: any) {
+    // Handle specific auth errors
+    if (err.message?.includes('email_already_in_use')) {
+      setError('This email is already registered. Please login instead.');
+    } else if (err.message?.includes('email_malformed')) {
+      setError('Please enter a valid email address');
+    } else {
       setError('Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <form onSubmit={handleSubmit}>

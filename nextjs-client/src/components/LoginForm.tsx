@@ -30,7 +30,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     try {
       await login(email, password);
       onSuccess();
-    } catch (err) {
+    } catch (err: any) {
+      if (err.message?.includes('email_already_in_use')) {
+        setError('Email already registered. Switching to login...');
+      }
       setError('Login failed. Please check your credentials.');
     } finally {
       setLoading(false);

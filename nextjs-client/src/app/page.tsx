@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Box, Button, VStack, Text, Heading } from '@chakra-ui/react';
 import { Room } from 'colyseus.js';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,7 +20,7 @@ export default function Home() {
       
       setRoom(gameRoom);
       
-      gameRoom.onStateChange((state) => {
+      gameRoom.onStateChange((state: any) => {
         console.log('Room state changed:', state);
         if (state.players) {
           const playersArray = Array.from(state.players.values());
