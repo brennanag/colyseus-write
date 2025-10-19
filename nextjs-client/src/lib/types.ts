@@ -33,12 +33,12 @@ export interface ChatMessage {
 }
 
 export interface GameState {
-  phase: GamePhase;
-  setupStage: SetupStage;
-  currentWritingRound: number;
-  totalWritingRounds: number;
-  players: Player[];
-  contributions: WritingContribution[];
-  currentStory: string;
-  chatMessages: ChatMessage[];
-}
+    phase: GamePhase;
+    setupStage: SetupStage;
+    currentWritingRound: number;
+    totalWritingRounds: number;
+    players: Map<string, Player>; // Change from Player[] to Map<string, Player>
+    contributions: WritingContribution[];
+    currentStory: string;
+    chatMessages: ChatMessage[];
+  }

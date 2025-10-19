@@ -5,19 +5,22 @@ import {
 import { Player } from '@/lib/types';
 
 interface LobbyPhaseProps {
-  players: Player[];
+  players: Map<string, Player>;
   onReady: () => void;
 }
 
 export function LobbyPhase({ players, onReady }: LobbyPhaseProps) {
-  return (
+  
+    const playersArray = Array.from(players.values());
+
+    return (
     <Box>
       <VStack gap={6}>
         <Heading>Lobby</Heading>
         <Text>Waiting for players to join...</Text>
         
         <VStack gap={2} width="100%">
-          {players.map(player => (
+          {playersArray.map(player => (
             <Box 
               key={player.id} 
               p={3} 

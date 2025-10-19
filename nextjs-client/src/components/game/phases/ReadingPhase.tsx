@@ -8,7 +8,7 @@ import { ChatMessage, Player } from '@/lib/types';
 interface ReadingPhaseProps {
   finalStory: string;
   chatMessages: ChatMessage[];
-  players: Player[];
+  players: Map<string, Player>;
   onSendMessage: (message: string) => void;
 }
 
