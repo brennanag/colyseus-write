@@ -5,22 +5,23 @@ import { Box, Button, VStack, Text, Heading } from '@chakra-ui/react';
 import { Room } from 'colyseus.js';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForms from '../components/AuthForms';
+import { WritingGameState, Player } from '../schema/WritingGameState';
 
 export default function Home() {
-  const { user, logout, client } = useAuth(); // Remove token, add client
-  const [room, setRoom] = useState<Room | null>(null);
-  const [players, setPlayers] = useState<any[]>([]);
+  const { user, logout, client } = useAuth();
+  const [room, setRoom] = useState<Room<WritingGameState> | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
 
   const joinRoom = async () => {
     if (!client || !user) return;
     
     try {
       // Token is automatically handled by client.auth
-      const gameRoom = await client.joinOrCreate('writing_room', {});
+      const gameRoom = await client.joinOrCreate<WritingGameState>('writing_room', {});
       
       setRoom(gameRoom);
       
-      gameRoom.onStateChange((state: any) => {
+      gameRoom.onStateChange((state) => {
         console.log('Room state changed:', state);
         if (state.players) {
           const playersArray = Array.from(state.players.values());
