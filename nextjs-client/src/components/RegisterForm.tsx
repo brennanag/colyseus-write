@@ -1,4 +1,3 @@
-// src/components/RegisterForm.tsx
 'use client';
 
 import { useState } from 'react';
@@ -7,9 +6,9 @@ import {
   Field,
   Input,
   Stack,
-  Text,
   Alert,
 } from '@chakra-ui/react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface RegisterFormProps {
   onSuccess: () => void;
@@ -21,6 +20,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +28,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
     setError('');
 
     try {
-      console.log('Registering:', { email, password, name });
+      await register(email, password, name);
       onSuccess();
     } catch (err) {
       setError('Registration failed. Please try again.');

@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await response.json();
     setUser(data.user);
     setToken(data.token);
+    localStorage.setItem('authToken', data.token); // Optional: persist token
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -48,11 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await response.json();
     setUser(data.user);
     setToken(data.token);
+    localStorage.setItem('authToken', data.token); // Optional: persist token
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
+    localStorage.removeItem('authToken');
   };
 
   return (
