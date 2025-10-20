@@ -22,6 +22,8 @@ export default function Home() {
   const [gameState, setGameState] = useState<WritingGameState | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [writingText, setWritingText] = useState("");
+  const [connectionStatus, setConnectionStatus] =
+    useState<string>("Disconnected");
 
   const formatTime = (ms: number) => {
     return Math.ceil(ms / 1000);
