@@ -3,6 +3,7 @@ export const GAME_CONFIG = {
     lobbyCountdown: 15000, // 15 seconds
     writingPhase: 15000, // 15 seconds
     submissionGrace: 30000, // 30 seconds
+    betweenRoundsBuffer: 3000, // 3 seconds - NEW
   },
   requirements: {
     minPlayers: 2,

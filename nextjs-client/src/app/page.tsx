@@ -129,6 +129,12 @@ export default function Home() {
                     {gameState?.timeRemaining ? `${formatTime(gameState.timeRemaining)}s` : '--'}
                   </Text>
                 </VStack>
+                <VStack align="start" gap={0}>
+                  <Text fontSize="sm" color="gray.600">Round</Text>
+                  <Text fontWeight="bold">
+                    {gameState?.currentRound !== undefined ? `${gameState.currentRound + 1}/${players.length}` : '--'}
+                  </Text>
+                </VStack>
                 <Button onClick={leaveRoom} colorScheme="red" size="sm">
                   Leave Room
                 </Button>
@@ -138,7 +144,7 @@ export default function Home() {
             {/* Players List */}
             <Box bg="white" p={4} borderRadius="md" shadow="sm">
               <Text fontSize="lg" fontWeight="bold" mb={3}>
-                Players ({players.length}/8)
+                Players ({players.length})
               </Text>
               <VStack align="stretch" gap={2}>
                 {players.map((player) => (
@@ -202,80 +208,113 @@ export default function Home() {
             {gameState?.phase === 'writing' && (
               <Box bg="purple.50" p={6} borderRadius="md">
                 <Text fontSize="xl" fontWeight="bold" mb={2}>
-                  Writing Prompt:
-                </Text>
-                <Text fontSize="lg" mb={4} fontStyle="italic">
-                  "{gameState.currentPrompt}"
-                </Text>
-                <Text fontSize="sm" color="gray.600" mb={4}>
-                  Time remaining: {formatTime(gameState.timeRemaining)} seconds
-                  {currentPlayer?.hasSubmitted && ' • ✓ Submitted'}
+                  Round {gameState.currentRound + 1} of {players.length}
                 </Text>
                 
-                <Textarea
-                  value={writingText}
-                  onChange={(e) => setWritingText(e.target.value)}
-                  placeholder="Start writing your story here..."
-                  minH="200px"
-                  mb={4}
-                  disabled={currentPlayer?.hasSubmitted}
-                />
-                
-                <HStack justify="space-between">
-                  <Text fontSize="sm" color="gray.600">
-                    {writingText.length} characters
-                  </Text>
-                  <Button 
-                    onClick={submitWriting}
-                    colorScheme="green"
-                    disabled={!writingText.trim() || currentPlayer?.hasSubmitted}
-                  >
-                    {currentPlayer?.hasSubmitted ? '✓ Submitted' : 'Submit Writing'}
-                  </Button>
-                </HStack>
+                {/* Show which story the player is continuing */}
+                {(() => {
+                  const currentPlayer = getCurrentPlayer();
+                  const assignedStoryId = gameState.currentAssignments?.get(currentPlayer?.playerId || '');
+                  const assignedStory = gameState.stories?.get(assignedStoryId || '');
+                  
+                  return (
+                    <>
+                      <Text fontSize="lg" mb={2}>
+                        Continuing: <strong>Story {assignedStoryId?.replace('story_', '')}</strong>
+                      </Text>
+                      <Text fontSize="md" mb={4} fontStyle="italic">
+                        "{assignedStory?.originalPrompt}"
+                      </Text>
+                      
+               {/* Show accumulated story so far - CLEANER VERSION */}
+               {assignedStory?.accumulatedContent && (
+            <Box bg="white" p={4} borderRadius="md" mb={4} maxH="200px" overflowY="auto">
+              <Text fontSize="sm" fontWeight="bold" mb={2}>The story so far:</Text>
+              <Text fontSize="sm" whiteSpace="pre-wrap" color="gray.700" lineHeight="1.6">
+                {assignedStory.accumulatedContent}
+              </Text>
+            </Box>
+                      )}
+                      
+                      <Text fontSize="sm" color="gray.600" mb={4}>
+                        Time remaining: {formatTime(gameState.timeRemaining)} seconds
+                        {currentPlayer?.hasSubmitted && ' • ✓ Submitted'}
+                      </Text>
+                      
+                      <Textarea
+                        value={writingText}
+                        onChange={(e) => setWritingText(e.target.value)}
+                        placeholder="Add your continuation to the story..."
+                        minH="150px"
+                        mb={4}
+                        disabled={currentPlayer?.hasSubmitted}
+                      />
+                      
+                      <HStack justify="space-between">
+                        <Text fontSize="sm" color="gray.600">
+                          {writingText.length} characters
+                        </Text>
+                        <Button 
+                          onClick={submitWriting}
+                          colorScheme="green"
+                          disabled={!writingText.trim() || currentPlayer?.hasSubmitted}
+                        >
+                          {currentPlayer?.hasSubmitted ? '✓ Submitted' : 'Submit Continuation'}
+                        </Button>
+                      </HStack>
+                    </>
+                  );
+                })()}
               </Box>
             )}
 
-            {gameState?.phase === 'reading' && (
-              <Box bg="orange.50" p={6} borderRadius="md">
-                <Text fontSize="xl" fontWeight="bold" mb={4}>
-                  Stories from this Round
-                </Text>
-                
-                <VStack align="stretch" gap={4} mb={6}>
-                  {Array.from(gameState.submissions?.entries() || []).map(([playerId, story], index) => {
-                    const author = players.find(p => p.playerId === playerId);
-                    return (
-                      <Box key={playerId} bg="white" p={4} borderRadius="md" shadow="sm">
-                        <Text fontWeight="bold" mb={2}>
-                          Story {index + 1} {author?.playerName === user.name && '(Yours)'}
-                        </Text>
-                        <Text whiteSpace="pre-wrap">{story as string}</Text>
-                        <Text fontSize="sm" color="gray.600" mt={2}>
-                          — {author?.playerName}
-                        </Text>
-                      </Box>
-                    );
-                  })}
-                </VStack>
+{gameState?.phase === 'reading' && (
+  <Box bg="orange.50" p={6} borderRadius="md">
+    <Text fontSize="xl" fontWeight="bold" mb={4}>
+      Completed Collaborative Stories
+    </Text>
+    
+    <VStack align="stretch" spacing={6} mb={6}>
+      {Array.from(gameState.stories?.entries() || []).map(([storyId, story], index) => (
+        <Box key={storyId} bg="white" p={4} borderRadius="md" shadow="sm">
+          <Text fontWeight="bold" mb={2} fontSize="lg">
+            Story {index + 1}: "{story.originalPrompt}"
+          </Text>
+          {/* CLEANER STORY DISPLAY - removed monospace and gray background */}
+          <Box 
+            p={4} 
+            borderRadius="md" 
+            whiteSpace="pre-wrap"
+            fontSize="md"
+            lineHeight="1.6"
+            bg="white"
+          >
+            {story.accumulatedContent}
+          </Box>
+          <Text fontSize="sm" color="gray.600" mt={2}>
+            Created by all {players.length} players together
+          </Text>
+        </Box>
+      ))}
+    </VStack>
 
-                <Box textAlign="center">
-                  <Text mb={4}>
-                    {currentPlayer?.isReady 
-                      ? '✓ Ready for next round' 
-                      : 'Click below when you\'re ready for the next round'
-                    }
-                  </Text>
-                  <Button 
-                    onClick={nextRound}
-                    colorScheme={currentPlayer?.isReady ? 'green' : 'blue'}
-                    size="lg"
-                  >
-                    {currentPlayer?.isReady ? '✓ Ready' : 'Next Round'}
-                  </Button>
-                </Box>
-              </Box>
-            )}
+    <Box textAlign="center">
+      <Text mb={4}>
+        {currentPlayer?.isReady 
+          ? '✓ Ready for next game' 
+          : 'Click below when you\'re ready for the next game'
+        }
+      </Text>
+      <Button 
+        onClick={nextRound}
+        colorScheme={currentPlayer?.isReady ? 'green' : 'blue'}
+        size="lg"
+      >
+        {currentPlayer?.isReady ? '✓ Ready' : 'New Game'}
+      </Button>
+    </Box>
+  </Box>
+)}
           </>
         )}
       </VStack>

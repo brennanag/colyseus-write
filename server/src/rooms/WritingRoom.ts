@@ -1,9 +1,8 @@
 import { Room, Client } from "colyseus";
 import { JWT } from "@colyseus/auth";
-import { WritingGameState, Player } from "./schema/WritingGameState";
+import { WritingGameState, Player, Story } from "./schema/WritingGameState";
 import { GAME_CONFIG } from "../constants/game-config";
 
-// Define JWT payload interface
 interface JWTPayload {
   email: string;
   name?: string;
@@ -53,7 +52,6 @@ export class WritingRoom extends Room<WritingGameState> {
         }
         this.state.players.delete(sessionId);
         this.state.readyStates.delete(sessionId);
-        this.state.submissions.delete(sessionId);
       }
     });
 
@@ -84,7 +82,7 @@ export class WritingRoom extends Room<WritingGameState> {
 
       this.state.players.delete(client.sessionId);
       this.state.readyStates.delete(client.sessionId);
-      this.state.submissions.delete(client.sessionId);
+      this.state.currentAssignments.delete(client.sessionId);
     }
 
     if (this.state.phase === "lobby") {
@@ -96,11 +94,14 @@ export class WritingRoom extends Room<WritingGameState> {
     this.state.phase = "lobby";
     this.state.timerEndsAt = 0;
     this.state.timeRemaining = 0;
+    this.state.currentRound = 0;
+    this.state.stories.clear();
+    this.state.currentAssignments.clear();
     console.log("Game initialized in lobby phase");
   }
 
   private setupMessageHandlers() {
-    this.onMessage("toggleReady", (client, message) => {
+    this.onMessage("toggleReady", (client) => {
       this.handlePlayerReady(client);
     });
 
@@ -108,7 +109,7 @@ export class WritingRoom extends Room<WritingGameState> {
       this.handleWritingSubmission(client, message.text);
     });
 
-    this.onMessage("nextRound", (client, message) => {
+    this.onMessage("nextRound", (client) => {
       this.handleNextRound(client);
     });
   }
@@ -197,32 +198,71 @@ export class WritingRoom extends Room<WritingGameState> {
     this.state.players.forEach((player) => {
       player.hasSubmitted = false;
     });
-    this.state.submissions.clear();
 
-    // Set phase and prompt
+    // Initialize stories if first round
+    if (this.state.currentRound === 0) {
+      this.initializeStories();
+    } else {
+      this.rotateStoryAssignments();
+    }
+
     this.state.phase = "writing";
-    this.state.currentPrompt = this.getRandomPrompt();
 
-    // Set writing timer (as fallback)
+    // Set writing timer
     const endTime = Date.now() + GAME_CONFIG.timers.writingPhase;
     this.state.timerEndsAt = endTime;
     this.state.timeRemaining = GAME_CONFIG.timers.writingPhase;
 
     console.log(
-      `Writing phase started with prompt: ${this.state.currentPrompt}`
+      `Round ${this.state.currentRound + 1} started with ${
+        this.state.stories.size
+      } stories`
     );
 
     this.currentPhaseTimeout = setTimeout(() => {
-      // Only start grace period if not all players have submitted
-      const allSubmitted = Array.from(this.state.players.values()).every(
-        (p) => p.hasSubmitted
-      );
-      if (!allSubmitted) {
-        this.startSubmissionGracePeriod();
-      }
+      this.handleRoundCompletion();
     }, GAME_CONFIG.timers.writingPhase);
 
     this.startTimerUpdates();
+  }
+
+  private initializeStories() {
+    const playersArray = Array.from(this.state.players.values());
+
+    playersArray.forEach((player, index) => {
+      const story = new Story();
+      story.storyId = `story_${index}`;
+      story.originalPrompt = this.getRandomPrompt();
+      story.accumulatedContent = "";
+      story.currentRound = 0;
+
+      this.state.stories.set(story.storyId, story);
+
+      // Each player starts with their own story
+      this.state.currentAssignments.set(player.playerId, story.storyId);
+
+      console.log(`Player ${player.playerName} starts story: ${story.storyId}`);
+    });
+  }
+
+  private rotateStoryAssignments() {
+    const playersArray = Array.from(this.state.players.values());
+    const storiesArray = Array.from(this.state.stories.values());
+
+    // Simple rotation: each player gets the next story
+    playersArray.forEach((player, playerIndex) => {
+      const storyIndex =
+        (playerIndex + this.state.currentRound) % storiesArray.length;
+      const assignedStory = storiesArray[storyIndex];
+
+      this.state.currentAssignments.set(player.playerId, assignedStory.storyId);
+
+      console.log(
+        `Round ${this.state.currentRound + 1}: ${player.playerName} continues ${
+          assignedStory.storyId
+        }`
+      );
+    });
   }
 
   private getRandomPrompt(): string {
@@ -236,42 +276,65 @@ export class WritingRoom extends Room<WritingGameState> {
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
 
-    this.state.submissions.set(client.sessionId, text);
+    const assignedStoryId = this.state.currentAssignments.get(client.sessionId);
+    const story = this.state.stories.get(assignedStoryId!);
+
+    if (!story) return;
+
+    // Store this player's segment
+    story.segments.set(player.playerId, text);
+
+    // REMOVED: The clunky segment markers
+    // REPLACED WITH: Clean continuous text with space between contributions
+    if (story.accumulatedContent) {
+      story.accumulatedContent += " "; // Add space between segments
+    }
+    story.accumulatedContent += text; // Add the text directly
+
     player.hasSubmitted = true;
 
-    console.log(
-      `Player ${player.email} submitted writing (${text.length} chars)`
-    );
+    console.log(`Player ${player.playerName} added to story ${story.storyId}`);
 
     // Check if all players have submitted
-    const allPlayers = Array.from(this.state.players.values());
-    const allSubmitted = allPlayers.every((p) => p.hasSubmitted);
+    const allSubmitted = Array.from(this.state.players.values()).every(
+      (p) => p.hasSubmitted
+    );
 
     if (allSubmitted) {
-      console.log("All players have submitted! Ending writing phase early.");
-
-      // Clear the writing phase timeout since everyone is done
+      console.log(
+        "All players have submitted! Moving to next round or reading."
+      );
       if (this.currentPhaseTimeout) {
         clearTimeout(this.currentPhaseTimeout);
       }
-
-      // Skip grace period and go straight to reading
-      this.startReadingPhase();
+      this.handleRoundCompletion();
     }
   }
 
-  private startSubmissionGracePeriod() {
-    console.log("Starting submission grace period...");
+  private handleRoundCompletion() {
+    this.state.currentRound++;
+    const totalRounds = this.state.players.size;
 
-    this.currentPhaseTimeout = setTimeout(() => {
+    if (this.state.currentRound < totalRounds) {
+      // More rounds to go - add buffer before next round
+      console.log(
+        `Completed round ${this.state.currentRound}, starting next round after ${GAME_CONFIG.timers.betweenRoundsBuffer}ms buffer`
+      );
+
+      // Set a brief buffer phase
+      this.state.phase = "betweenRounds";
+      this.state.timerEndsAt = 0;
+      this.state.timeRemaining = 0;
+
+      // Start next round after buffer
+      this.currentPhaseTimeout = setTimeout(() => {
+        this.startWritingPhase();
+      }, GAME_CONFIG.timers.betweenRoundsBuffer);
+    } else {
+      // All rounds complete - go to reading
+      console.log("All rounds completed! Moving to reading phase.");
       this.startReadingPhase();
-    }, GAME_CONFIG.timers.submissionGrace);
-
-    const endTime = Date.now() + GAME_CONFIG.timers.submissionGrace;
-    this.state.timerEndsAt = endTime;
-    this.state.timeRemaining = GAME_CONFIG.timers.submissionGrace;
-
-    this.startTimerUpdates();
+    }
   }
 
   private startReadingPhase() {
@@ -285,7 +348,7 @@ export class WritingRoom extends Room<WritingGameState> {
     this.state.timerEndsAt = 0;
     this.state.timeRemaining = 0;
 
-    // Reset ready states for next round
+    // Reset for next game
     this.state.players.forEach((player) => {
       player.isReady = false;
       player.hasSubmitted = false;
@@ -293,7 +356,7 @@ export class WritingRoom extends Room<WritingGameState> {
     this.state.readyStates.clear();
 
     console.log(
-      `Reading phase started with ${this.state.submissions.size} submissions`
+      `Reading phase started with ${this.state.stories.size} completed stories`
     );
   }
 
@@ -320,15 +383,16 @@ export class WritingRoom extends Room<WritingGameState> {
   }
 
   private startNewRound() {
-    console.log("Starting new round!");
+    console.log("Starting new game!");
 
-    this.state.submissions.clear();
-    this.state.currentPrompt = "";
+    this.state.stories.clear();
+    this.state.currentAssignments.clear();
+    this.state.currentRound = 0;
     this.state.phase = "lobby";
     this.state.timerEndsAt = 0;
     this.state.timeRemaining = 0;
 
-    console.log("Back to lobby phase for new round");
+    console.log("Back to lobby phase for new game");
     this.checkLobbyStart();
   }
 

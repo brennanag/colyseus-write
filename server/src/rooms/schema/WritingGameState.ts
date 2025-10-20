@@ -9,6 +9,14 @@ export class Player extends Schema {
   @type("boolean") hasSubmitted: boolean = false;
 }
 
+export class Story extends Schema {
+  @type("string") storyId: string = "";
+  @type("string") originalPrompt: string = "";
+  @type("string") accumulatedContent: string = "";
+  @type({ map: "string" }) segments = new MapSchema<string>();
+  @type("number") currentRound: number = 0;
+}
+
 export class WritingGameState extends Schema {
   // Players in the game
   @type({ map: Player }) players = new MapSchema<Player>();
@@ -22,7 +30,11 @@ export class WritingGameState extends Schema {
 
   // Current round info
   @type("string") currentPrompt: string = "";
-  @type({ map: "string" }) submissions = new MapSchema<string>();
+
+  // Sequential stories properties
+  @type({ map: Story }) stories = new MapSchema<Story>();
+  @type("number") currentRound: number = 0;
+  @type({ map: "string" }) currentAssignments = new MapSchema<string>();
 
   // Ready states
   @type({ map: "boolean" }) readyStates = new MapSchema<boolean>();
