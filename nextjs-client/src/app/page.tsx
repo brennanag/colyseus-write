@@ -31,23 +31,34 @@ export default function Home() {
           const playersArray = Array.from(state.players.values());
           setPlayers(playersArray);
         }
-      });
+        gameRoom.state.players.onAdd= (player: Player, key: string) => {
+          console.log('Player joined:', player.playerName, "with key:" ,key);
+          // Refresh the players list
+          // const playersArray = Array.from(gameRoom.state.players.values());
+          // setPlayers(playersArray);
+        };
+
 
       // 4. Listen for players being added to the state.
-      gameRoom.state.players.onAdd((player, sessionId) => {
-        console.log('Player joined:', player.playerName, sessionId);
+      gameRoom.state.players.onAdd= (player: Player, key: string) => {
+        console.log('Player joined:', player.playerName, "with key:" ,key);
         // Refresh the players list
-        const playersArray = Array.from(gameRoom.state.players.values());
-        setPlayers(playersArray);
+        // const playersArray = Array.from(gameRoom.state.players.values());
+        // setPlayers(playersArray);
+      };
+
+      // // 5. Listen for players being removed from the state.
+      // gameRoom.state.players.onRemove((player, sessionId) => {
+      //   console.log('Player left:', player.playerName, sessionId);
+      //   // Refresh the players list
+      //   const playersArray = Array.from(gameRoom.state.players.values());
+      //   setPlayers(playersArray);
+      // });
+
+
       });
 
-      // 5. Listen for players being removed from the state.
-      gameRoom.state.players.onRemove((player, sessionId) => {
-        console.log('Player left:', player.playerName, sessionId);
-        // Refresh the players list
-        const playersArray = Array.from(gameRoom.state.players.values());
-        setPlayers(playersArray);
-      });
+
 
     } catch (error) {
       console.error('Failed to join room:', error);
@@ -101,7 +112,7 @@ export default function Home() {
             </Box>
 
             <Box>
-              <Heading size="md">Players in Room:</Heading>
+              <Heading size="md">{players.length} Players in Room:</Heading>
               <VStack align="start" mt={2}>
                 {players.map((player) => (
                   <Text key={player.playerId}>
