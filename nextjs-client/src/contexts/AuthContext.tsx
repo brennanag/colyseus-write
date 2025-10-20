@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { Client } from 'colyseus.js';
+import { Client, Room } from 'colyseus.js';
 
 // Create the Colyseus client instance
 const client = new Client('ws://localhost:2567');
@@ -18,6 +18,8 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   client: Client;
+  room: Room | null; 
+  setCurrentRoom: (room: Room | null) => void; 
 }
 
 // Create the context
@@ -25,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [room, setRoom] = useState<Room | null>(null); // Add room to context
 
   const register = async (email: string, password: string, name: string) => {
     const response = await client.auth.registerWithEmailAndPassword(
@@ -41,12 +44,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // Leave room if joined
+    if (room) {
+      await room.leave();
+      setRoom(null);
+    }
+    
+    // Sign out from auth
     await client.auth.signOut();
     setUser(null);
   };
 
+  // Add function to set room from page.tsx
+  const setCurrentRoom = (newRoom: Room | null) => {
+    setRoom(newRoom);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, client }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      register, 
+      logout, 
+      client,
+      room, // ADD THIS
+      setCurrentRoom // ADD THIS
+    }}>
       {children}
     </AuthContext.Provider>
   );

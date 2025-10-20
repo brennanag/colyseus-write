@@ -5,7 +5,6 @@ import { Box, Button, VStack, Text, Heading, Container, HStack } from '@chakra-u
 import { Room } from 'colyseus.js';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForms from '../components/AuthForms';
-// This import provides the TypeScript types for your room state.
 import { WritingGameState, Player } from '../schema/WritingGameState';
 
 export default function Home() {
@@ -31,29 +30,6 @@ export default function Home() {
           const playersArray = Array.from(state.players.values());
           setPlayers(playersArray);
         }
-        gameRoom.state.players.onAdd= (player: Player, key: string) => {
-          console.log('Player joined:', player.playerName, "with key:" ,key);
-          // Refresh the players list
-          // const playersArray = Array.from(gameRoom.state.players.values());
-          // setPlayers(playersArray);
-        };
-
-
-      // 4. Listen for players being added to the state.
-      gameRoom.state.players.onAdd= (player: Player, key: string) => {
-        console.log('Player joined:', player.playerName, "with key:" ,key);
-        // Refresh the players list
-        // const playersArray = Array.from(gameRoom.state.players.values());
-        // setPlayers(playersArray);
-      };
-
-      // // 5. Listen for players being removed from the state.
-      // gameRoom.state.players.onRemove((player, sessionId) => {
-      //   console.log('Player left:', player.playerName, sessionId);
-      //   // Refresh the players list
-      //   const playersArray = Array.from(gameRoom.state.players.values());
-      //   setPlayers(playersArray);
-      // });
 
 
       });
