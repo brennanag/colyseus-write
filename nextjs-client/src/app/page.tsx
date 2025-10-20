@@ -102,12 +102,14 @@ export default function Home() {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <VStack gap={6} align="stretch">
+      <VStack gap={1} align="stretch">
         {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
-            <Heading size="lg">Welcome, {user.name || user.email}!</Heading>
-            <Text color="gray.600">Collaborative Writing Game</Text>
+            <Heading size="lg" color="text.main">
+              Welcome, {user.name || user.email}!
+            </Heading>
+            <Text color="text.subtle">Collaborative Writing Game</Text>
           </Box>
           <Button onClick={() => logout()} colorScheme="gray" variant="outline">
             Logout
@@ -123,37 +125,43 @@ export default function Home() {
         ) : (
           <>
             {/* Room Info */}
-            <Box bg="blue.50" p={4} borderRadius="md">
+            <Box bg="bg.card" p={4} borderRadius="md">
               <HStack justify="space-between">
                 <VStack align="start" gap={0}>
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="sm" color="text.subtle">
                     Room
                   </Text>
-                  <Text fontWeight="bold">{room.roomId}</Text>
+                  <Text fontWeight="bold" color="text.main">
+                    {room.roomId}
+                  </Text>
                 </VStack>
                 <VStack align="start" gap={0}>
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="sm" color="text.subtle">
                     Phase
                   </Text>
-                  <Text fontWeight="bold" textTransform="capitalize">
+                  <Text
+                    fontWeight="bold"
+                    textTransform="capitalize"
+                    color="text.main"
+                  >
                     {gameState?.phase || "lobby"}
                   </Text>
                 </VStack>
                 <VStack align="start" gap={0}>
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="sm" color="text.subtle">
                     Time
                   </Text>
-                  <Text fontWeight="bold">
+                  <Text fontWeight="bold" color="text.main">
                     {gameState?.timeRemaining
                       ? `${formatTime(gameState.timeRemaining)}s`
                       : "--"}
                   </Text>
                 </VStack>
                 <VStack align="start" gap={0}>
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="sm" color="text.subtle">
                     Round
                   </Text>
-                  <Text fontWeight="bold">
+                  <Text fontWeight="bold" color="text.main">
                     {gameState?.currentRound !== undefined
                       ? `${gameState.currentRound + 1}/${players.length}`
                       : "--"}
@@ -166,8 +174,8 @@ export default function Home() {
             </Box>
 
             {/* Players List */}
-            <Box bg="white" p={4} borderRadius="md" shadow="sm">
-              <Text fontSize="lg" fontWeight="bold" mb={3}>
+            <Box bg="bg.card" p={4} borderRadius="md" shadow="sm">
+              <Text fontSize="lg" fontWeight="bold" mb={3} color="text.main">
                 Players ({players.length})
               </Text>
               <VStack align="stretch" gap={2}>
@@ -175,14 +183,18 @@ export default function Home() {
                   <HStack
                     key={player.playerId}
                     p={3}
-                    bg={player.email === user.email ? "blue.50" : "gray.50"}
+                    bg={
+                      player.email === user.email ? "bg.highlight" : "bg.subtle"
+                    }
                     borderRadius="md"
                     justify="space-between"
                   >
                     <HStack>
-                      <Text fontWeight="medium">{player.playerName}</Text>
+                      <Text fontWeight="medium" color="text.main">
+                        {player.playerName}
+                      </Text>
                       {player.email === user.email && (
-                        <Text fontSize="xs" color="blue.600">
+                        <Text fontSize="xs" color="text.highlight">
                           (You)
                         </Text>
                       )}
@@ -191,7 +203,9 @@ export default function Home() {
                       {gameState?.phase === "lobby" && (
                         <Text
                           fontSize="sm"
-                          color={player.isReady ? "green.600" : "gray.600"}
+                          color={
+                            player.isReady ? "text.success" : "text.subtle"
+                          }
                         >
                           {player.isReady ? "✓ Ready" : "Not Ready"}
                         </Text>
@@ -199,7 +213,9 @@ export default function Home() {
                       {gameState?.phase === "writing" && (
                         <Text
                           fontSize="sm"
-                          color={player.hasSubmitted ? "green.600" : "gray.600"}
+                          color={
+                            player.hasSubmitted ? "text.success" : "text.subtle"
+                          }
                         >
                           {player.hasSubmitted ? "✓ Submitted" : "Writing..."}
                         </Text>
@@ -207,7 +223,9 @@ export default function Home() {
                       {gameState?.phase === "reading" && (
                         <Text
                           fontSize="sm"
-                          color={player.isReady ? "green.600" : "gray.600"}
+                          color={
+                            player.isReady ? "text.success" : "text.subtle"
+                          }
                         >
                           {player.isReady ? "✓ Next Round" : "Reading..."}
                         </Text>
@@ -220,11 +238,11 @@ export default function Home() {
 
             {/* Game Content Based on Phase */}
             {gameState?.phase === "lobby" && (
-              <Box bg="green.50" p={6} borderRadius="md" textAlign="center">
-                <Text fontSize="xl" fontWeight="bold" mb={2}>
+              <Box bg="bg.lobby" p={6} borderRadius="md" textAlign="center">
+                <Text fontSize="xl" fontWeight="bold" mb={2} color="text.main">
                   Waiting in Lobby
                 </Text>
-                <Text mb={4}>
+                <Text mb={4} color="text.main">
                   {gameState.timeRemaining > 0
                     ? `Game starts in ${formatTime(
                         gameState.timeRemaining
@@ -242,8 +260,8 @@ export default function Home() {
             )}
 
             {gameState?.phase === "writing" && (
-              <Box bg="purple.50" p={6} borderRadius="md">
-                <Text fontSize="xl" fontWeight="bold" mb={2}>
+              <Box bg="bg.writing" p={6} borderRadius="md">
+                <Text fontSize="xl" fontWeight="bold" mb={2} color="text.main">
                   Round {gameState.currentRound + 1} of {players.length}
                 </Text>
 
@@ -259,20 +277,30 @@ export default function Home() {
 
                   return (
                     <>
-                      <Text fontSize="lg" mb={2}>
+                      <Text fontSize="lg" mb={2} color="text.main">
                         Continuing:{" "}
                         <strong>
                           Story {assignedStoryId?.replace("story_", "")}
                         </strong>
                       </Text>
-                      <Text fontSize="md" mb={4} fontStyle="italic">
+                      <Text
+                        fontSize="md"
+                        mb={4}
+                        fontStyle="italic"
+                        color="text.main"
+                      >
                         "{assignedStory?.originalPrompt}"
                       </Text>
 
                       {/* Show accumulated story so far - CLEANER VERSION */}
                       {assignedStory?.accumulatedContent && (
                         <Box mb={4}>
-                          <Text fontSize="sm" fontWeight="bold" mb={2}>
+                          <Text
+                            fontSize="sm"
+                            fontWeight="bold"
+                            mb={2}
+                            color="text.main"
+                          >
                             The story so far:
                           </Text>
                           <Box
@@ -280,7 +308,7 @@ export default function Home() {
                             borderRadius="md"
                             fontSize="md"
                             lineHeight="1.6"
-                            bg="white"
+                            bg="bg.card"
                             sx={{
                               "& ul, & ol": {
                                 paddingLeft: "1.5em",
@@ -297,21 +325,10 @@ export default function Home() {
                               __html: assignedStory.accumulatedContent || "",
                             }}
                           />
-                          <Text fontSize="sm" fontWeight="bold" mb={2}>
-                            The story so far:
-                          </Text>
-                          <Text
-                            fontSize="sm"
-                            whiteSpace="pre-wrap"
-                            color="gray.700"
-                            lineHeight="1.6"
-                          >
-                            {assignedStory.accumulatedContent}
-                          </Text>
                         </Box>
                       )}
 
-                      <Text fontSize="sm" color="gray.600" mb={4}>
+                      <Text fontSize="sm" color="text.subtle" mb={4}>
                         Time remaining: {formatTime(gameState.timeRemaining)}{" "}
                         seconds
                         {currentPlayer?.hasSubmitted && " • ✓ Submitted"}
@@ -322,11 +339,10 @@ export default function Home() {
                         isDisabled={currentPlayer?.hasSubmitted}
                       />
 
-                      <HStack justify="space-between">
-                        <Text fontSize="sm" color="gray.600">
+                      <HStack justify="space-between" mt={4}>
+                        <Text fontSize="sm" color="text.subtle">
                           {writingText.replace(/<[^>]*>/g, "").length}{" "}
                           characters
-                          {/* This counts text characters without HTML tags */}
                         </Text>
                         <Button
                           onClick={submitWriting}
@@ -347,8 +363,8 @@ export default function Home() {
             )}
 
             {gameState?.phase === "reading" && (
-              <Box bg="orange.50" p={6} borderRadius="md">
-                <Text fontSize="xl" fontWeight="bold" mb={4}>
+              <Box bg="bg.reading" p={6} borderRadius="md">
+                <Text fontSize="xl" fontWeight="bold" mb={4} color="text.main">
                   Completed Collaborative Stories
                 </Text>
 
@@ -357,27 +373,42 @@ export default function Home() {
                     ([storyId, story], index) => (
                       <Box
                         key={storyId}
-                        bg="white"
+                        bg="bg.card"
                         p={4}
                         borderRadius="md"
                         shadow="sm"
                       >
-                        <Text fontWeight="bold" mb={2} fontSize="lg">
+                        <Text
+                          fontWeight="bold"
+                          mb={2}
+                          fontSize="lg"
+                          color="text.main"
+                        >
                           Story {index + 1}: "{story.originalPrompt}"
                         </Text>
-                        {/* FIXED: story is now properly defined in this scope */}
                         <Box
                           p={4}
                           borderRadius="md"
-                          whiteSpace="pre-wrap"
                           fontSize="md"
                           lineHeight="1.6"
-                          bg="white"
+                          bg="bg.subtle"
+                          sx={{
+                            "& ul, & ol": {
+                              paddingLeft: "1.5em",
+                              marginBottom: "1em",
+                            },
+                            "& strong": {
+                              fontWeight: "bold",
+                            },
+                            "& em": {
+                              fontStyle: "italic",
+                            },
+                          }}
                           dangerouslySetInnerHTML={{
                             __html: story.accumulatedContent || "",
                           }}
                         />
-                        <Text fontSize="sm" color="gray.600" mt={2}>
+                        <Text fontSize="sm" color="text.subtle" mt={2}>
                           Created by all {players.length} players together
                         </Text>
                       </Box>
@@ -386,7 +417,7 @@ export default function Home() {
                 </VStack>
 
                 <Box textAlign="center">
-                  <Text mb={4}>
+                  <Text mb={4} color="text.main">
                     {currentPlayer?.isReady
                       ? "✓ Ready for next game"
                       : "Click below when you're ready for the next game"}
