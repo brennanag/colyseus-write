@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Button, VStack, Text, Heading } from '@chakra-ui/react';
+import { Box, Button, VStack, Text, Heading, Container, HStack } from '@chakra-ui/react';
 import { Room } from 'colyseus.js';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForms from '../components/AuthForms';
@@ -10,6 +10,7 @@ import { WritingGameState, Player } from '../schema/WritingGameState';
 export default function Home() {
   const { user, logout, client } = useAuth();
   const [room, setRoom] = useState<Room<WritingGameState> | null>(null);
+  const [gameState, setGameState] = useState<WritingGameState | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
 
   const joinRoom = async () => {
@@ -21,16 +22,23 @@ export default function Home() {
       
       setRoom(gameRoom);
       
+      // Set up room event listeners with proper typing
       gameRoom.onStateChange((state) => {
         console.log('Room state changed:', state);
+        setGameState(state);
+        
         if (state.players) {
           const playersArray = Array.from(state.players.values());
           setPlayers(playersArray);
         }
       });
 
-      gameRoom.onMessage("writing_submitted", (message) => {
-        console.log('Writing submitted:', message);
+      gameRoom.state.players.onAdd((player, sessionId) => {
+        console.log('Player joined:', player.playerName, sessionId);
+      });
+
+      gameRoom.state.players.onRemove((player, sessionId) => {
+        console.log('Player left:', player.playerName, sessionId);
       });
 
     } catch (error) {
@@ -42,13 +50,8 @@ export default function Home() {
     if (room) {
       await room.leave();
       setRoom(null);
+      setGameState(null);
       setPlayers([]);
-    }
-  };
-
-  const submitWriting = async (text: string) => {
-    if (room) {
-      room.send("submit_writing", { text });
     }
   };
 
@@ -57,8 +60,8 @@ export default function Home() {
   }
 
   return (
-    <Box minHeight="100vh" p={8}>
-      <VStack gap={6} align="stretch">
+    <Container maxW="container.xl" py={8}>
+      <VStack spacing={6} align="stretch">
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Heading size="lg">Welcome, {user.name || user.email}!</Heading>
@@ -70,34 +73,76 @@ export default function Home() {
         </Box>
 
         {!room ? (
-          <Button onClick={joinRoom} colorPalette="blue" size="lg">
-            Join Writing Room
-          </Button>
+          <Box textAlign="center">
+            <Button onClick={joinRoom} colorPalette="blue" size="lg">
+              Join Writing Room
+            </Button>
+          </Box>
         ) : (
           <>
-            <Box>
-              <Text>Connected to room: {room.roomId}</Text>
-              <Button onClick={leaveRoom} colorPalette="red" size="sm">
-                Leave Room
-              </Button>
+            {/* Room Header */}
+            <Box bg="blue.50" p={4} borderRadius="md">
+              <HStack justify="space-between">
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="sm" color="gray.600">Room ID</Text>
+                  <Text fontWeight="bold">{room.id}</Text>
+                </VStack>
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="sm" color="gray.600">Phase</Text>
+                  <Text fontWeight="bold" textTransform="capitalize">
+                    {gameState?.phase || 'lobby'}
+                  </Text>
+                </VStack>
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="sm" color="gray.600">Players</Text>
+                  <Text fontWeight="bold">
+                    {players.length} / {gameState?.maxPlayers || 8}
+                  </Text>
+                </VStack>
+                <Button onClick={leaveRoom} colorPalette="red" size="sm">
+                  Leave Room
+                </Button>
+              </HStack>
             </Box>
 
-            <Box>
-              <Heading size="md">Players in Room:</Heading>
-              <VStack align="start" mt={2}>
+            {/* Players List */}
+            <Box bg="white" p={4} borderRadius="md" shadow="sm">
+              <Text fontSize="lg" fontWeight="bold" mb={3}>
+                Players in Room
+              </Text>
+              <VStack align="stretch" spacing={2}>
                 {players.map((player) => (
-                  <Text key={player.playerId}>
-                    • {player.playerName} {player.isAuthenticated ? '✓' : ''}
-                  </Text>
+                  <HStack
+                    key={player.playerId}
+                    p={3}
+                    bg={player.email === user.email ? 'blue.50' : 'gray.50'}
+                    borderRadius="md"
+                    justify="space-between"
+                  >
+                    <HStack>
+                      <Text fontWeight="medium">{player.playerName}</Text>
+                      {player.email === user.email && (
+                        <Text fontSize="xs" color="blue.600">(You)</Text>
+                      )}
+                    </HStack>
+                    <HStack spacing={4}>
+                      {player.isReady && (
+                        <Text fontSize="xs" color="green.600" fontWeight="bold">
+                          ✓ Ready
+                        </Text>
+                      )}
+                    </HStack>
+                  </HStack>
                 ))}
               </VStack>
             </Box>
 
+            {/* Game Interface Placeholder */}
             <Box borderWidth={1} p={4} borderRadius="md">
               <Heading size="md">Writing Area</Heading>
               <Text mt={2}>Your collaborative writing interface will appear here.</Text>
               <Button 
-                onClick={() => submitWriting("Sample writing submission")} 
+                onClick={() => console.log('Submit writing')} 
                 colorPalette="green" 
                 mt={4}
               >
@@ -107,6 +152,6 @@ export default function Home() {
           </>
         )}
       </VStack>
-    </Box>
+    </Container>
   );
 }
