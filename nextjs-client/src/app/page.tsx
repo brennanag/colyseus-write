@@ -61,7 +61,7 @@ export default function Home() {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <VStack spacing={6} align="stretch">
+      <VStack gap={6} align="stretch">
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Heading size="lg">Welcome, {user.name || user.email}!</Heading>
@@ -83,17 +83,17 @@ export default function Home() {
             {/* Room Header */}
             <Box bg="blue.50" p={4} borderRadius="md">
               <HStack justify="space-between">
-                <VStack align="start" spacing={0}>
+                <VStack align="start" gap={0}>
                   <Text fontSize="sm" color="gray.600">Room ID</Text>
-                  <Text fontWeight="bold">{room.id}</Text>
+                  <Text fontWeight="bold">{room.roomId}</Text>
                 </VStack>
-                <VStack align="start" spacing={0}>
+                <VStack align="start" gap={0}>
                   <Text fontSize="sm" color="gray.600">Phase</Text>
                   <Text fontWeight="bold" textTransform="capitalize">
                     {gameState?.phase || 'lobby'}
                   </Text>
                 </VStack>
-                <VStack align="start" spacing={0}>
+                <VStack align="start" gap={0}>
                   <Text fontSize="sm" color="gray.600">Players</Text>
                   <Text fontWeight="bold">
                     {players.length} / {gameState?.maxPlayers || 8}
@@ -110,7 +110,7 @@ export default function Home() {
               <Text fontSize="lg" fontWeight="bold" mb={3}>
                 Players in Room
               </Text>
-              <VStack align="stretch" spacing={2}>
+              <VStack align="stretch" gap={2}>
                 {players.map((player) => (
                   <HStack
                     key={player.playerId}
@@ -125,7 +125,7 @@ export default function Home() {
                         <Text fontSize="xs" color="blue.600">(You)</Text>
                       )}
                     </HStack>
-                    <HStack spacing={4}>
+                    <HStack gap={4}>
                       {player.isReady && (
                         <Text fontSize="xs" color="green.600" fontWeight="bold">
                           ✓ Ready
