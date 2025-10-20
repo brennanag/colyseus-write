@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { Client, Room } from 'colyseus.js';
+import { WritingGameState } from '../schema/WritingGameState';
 
 // Create the Colyseus client instance
 const client = new Client('ws://localhost:2567');
@@ -18,16 +19,15 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   client: Client;
-  room: Room | null; 
-  setCurrentRoom: (room: Room | null) => void; 
+  room: Room<WritingGameState> | null;
+  setCurrentRoom: (room: Room<WritingGameState> | null) => void;
 }
 
-// Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [room, setRoom] = useState<Room | null>(null); // Add room to context
+  const [room, setRoom] = useState<Room<WritingGameState> | null>(null);
 
   const register = async (email: string, password: string, name: string) => {
     const response = await client.auth.registerWithEmailAndPassword(
@@ -55,8 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  // Add function to set room from page.tsx
-  const setCurrentRoom = (newRoom: Room | null) => {
+  const setCurrentRoom = (newRoom: Room<WritingGameState> | null) => {
     setRoom(newRoom);
   };
 
@@ -67,8 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register, 
       logout, 
       client,
-      room, // ADD THIS
-      setCurrentRoom // ADD THIS
+      room,
+      setCurrentRoom 
     }}>
       {children}
     </AuthContext.Provider>
