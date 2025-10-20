@@ -1,12 +1,11 @@
-/* Minimal global reset - let Chakra handle everything else */
+/* Minimal global reset - Chakra UI handles all theming */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
 }
-
-/* Remove all color/background/font styling - Chakra handles this */

@@ -1,13 +1,10 @@
-// lib/theme.ts
-import { createSystem, defaultConfig } from "@chakra-ui/react";
+import { createSystem, defaultConfig, defineConfig } from "@chakra-ui/react";
 
-// Define your custom theme configuration
-export const system = createSystem(defaultConfig, {
+const customConfig = defineConfig({
   theme: {
-    // 1. Define raw color tokens
     tokens: {
       colors: {
-        // Gray palette
+        // Raw color tokens
         gray: {
           50: { value: "#fafafa" },
           100: { value: "#f4f4f5" },
@@ -21,7 +18,6 @@ export const system = createSystem(defaultConfig, {
           900: { value: "#18181b" },
           950: { value: "#111111" },
         },
-        // Blue palette
         blue: {
           50: { value: "#eff6ff" },
           100: { value: "#dbeafe" },
@@ -35,7 +31,6 @@ export const system = createSystem(defaultConfig, {
           900: { value: "#14204a" },
           950: { value: "#0c142e" },
         },
-        // Green palette
         green: {
           50: { value: "#f0fdf4" },
           100: { value: "#dcfce7" },
@@ -49,7 +44,6 @@ export const system = createSystem(defaultConfig, {
           900: { value: "#042713" },
           950: { value: "#03190c" },
         },
-        // Purple palette
         purple: {
           50: { value: "#faf5ff" },
           100: { value: "#f3e8ff" },
@@ -63,7 +57,6 @@ export const system = createSystem(defaultConfig, {
           900: { value: "#2f0553" },
           950: { value: "#1a032e" },
         },
-        // Orange palette
         orange: {
           50: { value: "#fff7ed" },
           100: { value: "#ffedd5" },
@@ -77,7 +70,6 @@ export const system = createSystem(defaultConfig, {
           900: { value: "#3b1106" },
           950: { value: "#220a04" },
         },
-        // Red palette
         red: {
           50: { value: "#fef2f2" },
           100: { value: "#fee2e2" },
@@ -93,7 +85,6 @@ export const system = createSystem(defaultConfig, {
         },
       },
     },
-    // 2. Map tokens to semantic use-cases for light/dark modes :cite[7]
     semanticTokens: {
       colors: {
         // Background colors
@@ -108,9 +99,6 @@ export const system = createSystem(defaultConfig, {
         },
         "bg.subtle": {
           value: { _light: "{colors.gray.50}", _dark: "{colors.gray.700}" },
-        },
-        "bg.muted": {
-          value: { _light: "{colors.gray.100}", _dark: "{colors.gray.900}" },
         },
         // Phase-specific backgrounds
         "bg.lobby": {
@@ -133,37 +121,11 @@ export const system = createSystem(defaultConfig, {
           value: { _light: "{colors.blue.600}", _dark: "{colors.blue.400}" },
         },
         "text.success": {
-          value: { _light: "{colors.green.600}", _dark: "{colors.green.300}" },
+          value: { _light: "{colors.green.600}", _dark: "{colors.green.400}" },
         },
-        "text.error": {
-          value: { _light: "{colors.red.600}", _dark: "{colors.red.300}" },
-        },
-        // Border colors
-        "border.default": {
-          value: { _light: "{colors.gray.200}", _dark: "{colors.gray.700}" },
-        },
-        "border.muted": {
-          value: { _light: "{colors.gray.100}", _dark: "{colors.gray.800}" },
-        },
-        // Status colors
-        "status.success": {
-          value: { _light: "{colors.green.500}", _dark: "{colors.green.400}" },
-        },
-        "status.error": {
-          value: { _light: "{colors.red.500}", _dark: "{colors.red.400}" },
-        },
-        "status.info": {
-          value: { _light: "{colors.blue.500}", _dark: "{colors.blue.400}" },
-        },
-        styles: {
-            global: {
-              body: {
-                bg: "{colors.bg.page}",
-                color: "{colors.text.main}",
-                fontFamily: "{fonts.body}",
-                lineHeight: "1.5",
-              },
-            },
-          },
-        },
-      });
+      },
+    },
+  },
+});
+
+export const system = createSystem(defaultConfig, customConfig);
