@@ -15,6 +15,7 @@ import { useAuth } from "../contexts/AuthContext";
 import AuthForms from "../components/AuthForms";
 import { WritingGameState, Player } from "../schema/WritingGameState";
 import TiptapEditor from "@/components/TiptapEditor";
+import { DebugBar } from "@/components/debug/DebugBar";
 
 export default function Home() {
   const { user, logout, client, room, setCurrentRoom } = useAuth();
@@ -102,6 +103,23 @@ export default function Home() {
 
   return (
     <Container maxW="container.xl" py={8}>
+      <Box>
+        <DebugBar
+          roomId={room?.roomId || null}
+          playerCount={
+            gameState?.players ? Object.keys(gameState.players).length : 0
+          }
+          currentPhase={gameState?.phase || "connecting"}
+          connectionStatus={connectionStatus}
+        />
+
+        <Box maxWidth="6xl" margin="0 auto" p={6}>
+          <VStack gap={6} align="stretch">
+            {renderCurrentPhase()}
+          </VStack>
+        </Box>
+      </Box>
+
       <VStack gap={1} align="stretch">
         {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center">
