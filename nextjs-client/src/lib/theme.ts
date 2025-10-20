@@ -92,7 +92,7 @@ const customConfig = defineConfig({
           value: { _light: "white", _dark: "{colors.gray.950}" },
         },
         "bg.card": {
-          value: { _light: "white", _dark: "{colors.gray.800}" },
+          value: { _light: "white", _dark: "{colors.gray.950}" },
         },
         "bg.highlight": {
           value: { _light: "{colors.blue.50}", _dark: "{colors.blue.900}" },

@@ -10,6 +10,7 @@ import {
   Container,
   HStack,
   Textarea,
+  Separator,
 } from "@chakra-ui/react";
 import { useAuth } from "../contexts/AuthContext";
 import AuthForms from "../components/AuthForms";
@@ -105,31 +106,28 @@ export default function Home() {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <Box>
-        <DebugBar
-          roomId={room?.roomId || null}
-          playerCount={
-            gameState?.players ? Object.keys(gameState.players).length : 0
-          }
-          currentPhase={gameState?.phase || "connecting"}
-          connectionStatus={connectionStatus}
-        />
-
-        <Box maxWidth="6xl" margin="0 auto" p={6}>
-          <VStack gap={6} align="stretch">
-            {renderCurrentPhase()}
-          </VStack>
-        </Box>
-      </Box>
-
       <VStack gap={1} align="stretch">
+        <Box>
+          <DebugBar
+            roomId={room?.roomId || null}
+            playerCount={Number(gameState?.players.size) || 0}
+            currentPhase={gameState?.phase || "connecting"}
+            connectionStatus={connectionStatus}
+          />
+          <Box maxWidth="6xl" margin="0 auto" p={0}>
+            {/* <VStack gap={6} align="stretch">
+            {renderCurrentPhase()}
+          </VStack> */}
+          </Box>
+        </Box>
+
         {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Heading size="lg" color="text.main">
               Welcome, {user.name || user.email}!
             </Heading>
-            <Text color="text.subtle">Collaborative Writing Game</Text>
+            {/* <Text color="text.subtle">Collaborative Writing Game</Text> */}
           </Box>
           <Button onClick={() => logout()} colorScheme="gray" variant="outline">
             Logout
@@ -144,60 +142,16 @@ export default function Home() {
           </Box>
         ) : (
           <>
-            {/* Room Info */}
-            <Box bg="bg.card" p={4} borderRadius="md">
-              <HStack justify="space-between">
-                <VStack align="start" gap={0}>
-                  <Text fontSize="sm" color="text.subtle">
-                    Room
-                  </Text>
-                  <Text fontWeight="bold" color="text.main">
-                    {room.roomId}
-                  </Text>
-                </VStack>
-                <VStack align="start" gap={0}>
-                  <Text fontSize="sm" color="text.subtle">
-                    Phase
-                  </Text>
-                  <Text
-                    fontWeight="bold"
-                    textTransform="capitalize"
-                    color="text.main"
-                  >
-                    {gameState?.phase || "lobby"}
-                  </Text>
-                </VStack>
-                <VStack align="start" gap={0}>
-                  <Text fontSize="sm" color="text.subtle">
-                    Time
-                  </Text>
-                  <Text fontWeight="bold" color="text.main">
-                    {gameState?.timeRemaining
-                      ? `${formatTime(gameState.timeRemaining)}s`
-                      : "--"}
-                  </Text>
-                </VStack>
-                <VStack align="start" gap={0}>
-                  <Text fontSize="sm" color="text.subtle">
-                    Round
-                  </Text>
-                  <Text fontWeight="bold" color="text.main">
-                    {gameState?.currentRound !== undefined
-                      ? `${gameState.currentRound + 1}/${players.length}`
-                      : "--"}
-                  </Text>
-                </VStack>
+            {/* Players List */}
+            <Box bg="bg.card" p={4} borderRadius="md" shadow="sm">
+              <HStack justify="space-between" mb={4}>
+                <Text fontSize="lg" fontWeight="bold" mb={3} color="text.main">
+                  Players ({players.length})
+                </Text>
                 <Button onClick={leaveRoom} colorScheme="red" size="sm">
                   Leave Room
                 </Button>
               </HStack>
-            </Box>
-
-            {/* Players List */}
-            <Box bg="bg.card" p={4} borderRadius="md" shadow="sm">
-              <Text fontSize="lg" fontWeight="bold" mb={3} color="text.main">
-                Players ({players.length})
-              </Text>
               <VStack align="stretch" gap={2}>
                 {players.map((player) => (
                   <HStack
@@ -258,7 +212,7 @@ export default function Home() {
 
             {/* Game Content Based on Phase */}
             {gameState?.phase === "lobby" && (
-              <Box bg="bg.lobby" p={6} borderRadius="md" textAlign="center">
+              <Box bg="bg.card" p={6} borderRadius="md" textAlign="center">
                 <Text fontSize="xl" fontWeight="bold" mb={2} color="text.main">
                   Waiting in Lobby
                 </Text>
@@ -267,23 +221,25 @@ export default function Home() {
                     ? `Game starts in ${formatTime(
                         gameState.timeRemaining
                       )} seconds when all players are ready`
-                    : "Click ready when you're prepared to start writing"}
+                    : " "}
                 </Text>
                 <Button
                   onClick={toggleReady}
                   colorScheme={currentPlayer?.isReady ? "green" : "blue"}
                   size="lg"
                 >
-                  {currentPlayer?.isReady ? "✓ Ready" : "I'm Ready!"}
+                  {currentPlayer?.isReady
+                    ? "Wait, I'm not ready"
+                    : "Let's Write!"}
                 </Button>
               </Box>
             )}
 
             {gameState?.phase === "writing" && (
-              <Box bg="bg.writing" p={6} borderRadius="md">
-                <Text fontSize="xl" fontWeight="bold" mb={2} color="text.main">
+              <Box bg="bg.card" p={6} borderRadius="md">
+                {/* <Text fontSize="xl" fontWeight="bold" mb={2} color="text.main">
                   Round {gameState.currentRound + 1} of {players.length}
-                </Text>
+                </Text> */}
 
                 {/* Show which story the player is continuing */}
                 {(() => {
@@ -297,10 +253,11 @@ export default function Home() {
 
                   return (
                     <>
-                      <Text fontSize="lg" mb={2} color="text.main">
+                      <Text fontSize="md" mb={2} color="text.main">
                         Continuing:{" "}
                         <strong>
-                          Story {assignedStoryId?.replace("story_", "")}
+                          Story{" "}
+                          {1 + Number(assignedStoryId?.replace("story_", ""))}
                         </strong>
                       </Text>
                       <Text
@@ -383,12 +340,12 @@ export default function Home() {
             )}
 
             {gameState?.phase === "reading" && (
-              <Box bg="bg.reading" p={6} borderRadius="md">
-                <Text fontSize="xl" fontWeight="bold" mb={4} color="text.main">
-                  Completed Collaborative Stories
+              <Box bg="bg.card" p={4} borderRadius="md">
+                <Text fontSize="xl" fontWeight="" mb={2}>
+                  Read the Completed Stories
                 </Text>
 
-                <VStack align="stretch" spacing={6} mb={6}>
+                <VStack align="stretch" gap={6} mb={6}>
                   {Array.from(gameState.stories?.entries() || []).map(
                     ([storyId, story], index) => (
                       <Box
@@ -399,12 +356,12 @@ export default function Home() {
                         shadow="sm"
                       >
                         <Text
-                          fontWeight="bold"
+                          fontWeight="light"
                           mb={2}
-                          fontSize="lg"
+                          fontSize="md"
                           color="text.main"
                         >
-                          Story {index + 1}: "{story.originalPrompt}"
+                          Story {index + 1} Prompt: "{story.originalPrompt}"
                         </Text>
                         <Box
                           p={4}
@@ -428,9 +385,10 @@ export default function Home() {
                             __html: story.accumulatedContent || "",
                           }}
                         />
-                        <Text fontSize="sm" color="text.subtle" mt={2}>
+                        {/* <Text fontSize="sm" color="text.subtle" mt={2}>
                           Created by all {players.length} players together
-                        </Text>
+                        </Text> */}
+                        <Separator />
                       </Box>
                     )
                   )}

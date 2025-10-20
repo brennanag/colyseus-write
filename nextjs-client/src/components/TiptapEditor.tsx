@@ -57,8 +57,8 @@ export default function TiptapEditor({
         borderColor="gray.300"
         borderRadius="md"
         p={3}
-        bg="white"
-        minH="150px"
+        bg="red"
+        minH=""
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -112,7 +112,7 @@ export default function TiptapEditor({
         borderColor="gray.300"
         borderRadius="md"
         p={3}
-        bg="white"
+        bg="colors.gray.950"
         minH="150px"
         sx={{
           "& .ProseMirror": {
