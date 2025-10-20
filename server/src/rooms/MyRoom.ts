@@ -7,7 +7,7 @@ export class MyRoom extends Room<MyRoomState> {
   onCreate(options: any) {
     // Initialize the room state
     this.setState(new MyRoomState());
-    
+
     console.log("MyRoom created!", this.roomId);
 
     // Handle player movement messages
@@ -23,9 +23,9 @@ export class MyRoom extends Room<MyRoomState> {
     // Handle chat messages
     this.onMessage("chat", (client, message) => {
       console.log("Chat from", client.sessionId, ":", message);
-      this.broadcast("chat", { 
-        playerId: client.sessionId, 
-        message: message 
+      this.broadcast("chat", {
+        playerId: client.sessionId,
+        message: message,
       });
     });
   }
@@ -65,7 +65,7 @@ export class MyRoom extends Room<MyRoomState> {
       // Update player position
       player.x += data.dx;
       player.y += data.dy;
-      
+
       console.log(`Player ${player.name} moved to (${player.x}, ${player.y})`);
     }
   }
@@ -73,22 +73,23 @@ export class MyRoom extends Room<MyRoomState> {
   private handlePlayerJump(client: Client, data: any) {
     const player = this.state.players.get(client.sessionId);
     if (player) {
-        const serverTime = Date.now();
-        const latency = serverTime - data.clientTime;
-        
-        console.log(`📊 Jump latency: ${latency}ms`);
-        console.log(`Client sent: ${data.clientTime}, Server received: ${serverTime}`);
-        
-        // Simple jump
-        player.y -= 50;
-        
-        // Send back the latency for learning
-        client.send("jump_processed", {
-            clientTime: data.clientTime,
-            serverTime: serverTime,
-            latency: latency
-        });
+      const serverTime = Date.now();
+      const latency = serverTime - data.clientTime;
+
+      console.log(`📊 Jump latency: ${latency}ms`);
+      console.log(
+        `Client sent: ${data.clientTime}, Server received: ${serverTime}`
+      );
+
+      // Simple jump
+      player.y -= 50;
+
+      // Send back the latency for learning
+      client.send("jump_processed", {
+        clientTime: data.clientTime,
+        serverTime: serverTime,
+        latency: latency,
+      });
     }
   }
-  
 }
