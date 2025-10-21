@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import AuthForms from "../components/AuthForms";
 import { WritingGameState, Player } from "../schema/WritingGameState";
 import TiptapEditor from "@/components/TiptapEditor";
 import { DebugBar } from "@/components/debug/DebugBar";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { useAutoSave } from "../hooks/useAutoSave"; // Adjust path as needed
+import { useAutoSave } from "../hooks/useAutoSave";
 
 export default function Home() {
   const { user, logout, client, room, setCurrentRoom } = useAuth();
@@ -19,14 +19,13 @@ export default function Home() {
 
   console.log("Rendering Home component with:");
 
-  // ADD THESE LINES RIGHT AFTER your useState declarations:
   const { isSaving, lastSaved, error, manualSave } = useAutoSave({
     roomId: room?.roomId || "",
     playerId: user?.id || "",
-    // NO content prop here
+    content: writingText || "", // ← Ensure content is always a string, never undefined
   });
 
-  // ADD THIS useEffect for interval auto-save
+  // Interval-based auto-save that pulls from writingText state
   useEffect(() => {
     const interval = setInterval(() => {
       if (writingText.length > 0 && room?.roomId && user?.id) {
@@ -35,13 +34,11 @@ export default function Home() {
           writingText.length
         );
         console.log("📝 Content sample:", writingText.substring(0, 100));
-
-        // Call manualSave to trigger the save
         manualSave();
       } else if (writingText.length === 0) {
         console.log("⏸️  Auto-save skipped: empty content");
       }
-    }, 10000); // Every 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [writingText, room?.roomId, user?.id, manualSave]);
@@ -232,6 +229,29 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Auto-save status */}
+            <div className="flex justify-between items-center text-sm bg-yellow-50 p-2 rounded">
+              <div className="flex items-center space-x-2">
+                {isSaving ? (
+                  <>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <span className="text-yellow-600">Saving...</span>
+                  </>
+                ) : lastSaved ? (
+                  <>
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-green-600">Auto-save active</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    <span className="text-gray-600">Auto-save ready</span>
+                  </>
+                )}
+              </div>
+              {error && <span className="text-red-600">Auto-save error</span>}
+            </div>
+
             {/* Game Content Based on Phase */}
             {gameState?.phase === "lobby" && (
               <div className="bg-white p-6 rounded-lg text-center border border-gray-200">
@@ -304,12 +324,28 @@ export default function Home() {
                         seconds
                         {currentPlayer?.hasSubmitted && " • ✓ Submitted"}
                       </p>
+                      <textarea
+                        value={writingText}
+                        onChange={(e) => setWritingText(e.target.value)}
+                        placeholder="Write your story continuation..."
+                        className="min-h-[200px] p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+                        disabled={currentPlayer?.hasSubmitted}
+                      />
 
-                      <SimpleEditor
+                      <div className="mt-2 p-2 bg-blue-50 rounded">
+                        <p className="text-sm text-blue-700">
+                          <strong>Debug:</strong> Textarea length:{" "}
+                          {writingText.length} chars
+                          {writingText.length > 0 &&
+                            " - Auto-save should work now!"}
+                        </p>
+                      </div>
+
+                      {/* <SimpleEditor
                         content={writingText}
                         onUpdate={(content) => setWritingText(content)}
                         editable={!currentPlayer?.hasSubmitted}
-                      />
+                      /> */}
 
                       <div className="flex justify-between items-center mt-4">
                         <p className="text-sm text-gray-600">

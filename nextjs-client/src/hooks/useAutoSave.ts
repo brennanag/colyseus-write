@@ -22,8 +22,7 @@ export function useAutoSave({
   console.log("🔍 useAutoSave hook called with:", {
     roomId,
     playerId,
-    // roundNumber,
-    contentLength: content.length,
+    contentLength: content?.length || 0,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -39,29 +38,27 @@ export function useAutoSave({
   }, [content]);
 
   const performSave = useCallback(async () => {
-    // 🔍 ADD THIS DEBUG LOG AT THE TOP OF performSave
-    console.log(
-      "🔍 Auto-save triggered, content length:",
-      contentRef.current.length
-    );
-    if (!contentRef.current.trim()) return; // Don't save empty content
+    if (!contentRef.current.trim()) return;
 
     setIsSaving(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/submissions/auto-save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          roomId,
-          playerId,
-          //   roundNumber,
-          content: contentRef.current,
-        }),
-      });
+      // 🔍 USE ABSOLUTE URL TO COLySEUS SERVER
+      const response = await fetch(
+        "http://localhost:2567/api/submissions/auto-save",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            roomId,
+            playerId,
+            content: contentRef.current,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Auto-save failed: ${response.statusText}`);
