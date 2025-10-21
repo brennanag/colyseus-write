@@ -73,7 +73,15 @@ import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils";
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss";
 
-import content from "@/components/tiptap-templates/simple/data/content.json";
+// REMOVED: Unused content import
+// import content from "@/components/tiptap-templates/simple/data/content.json";
+
+// Add props interface
+interface SimpleEditorProps {
+  initialContent: string;
+  onUpdate: (content: string) => void;
+  editable?: boolean;
+}
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -183,7 +191,11 @@ const MobileToolbarContent = ({
   </>
 );
 
-export function SimpleEditor() {
+export function SimpleEditor({
+  initialContent,
+  onUpdate,
+  editable = true,
+}: SimpleEditorProps) {
   const isMobile = useIsMobile();
   const { height } = useWindowSize();
   const [mobileView, setMobileView] = React.useState<
@@ -229,7 +241,11 @@ export function SimpleEditor() {
         onError: (error) => console.error("Upload failed:", error),
       }),
     ],
-    // content,
+    content: initialContent,
+    editable,
+    onUpdate: ({ editor }) => {
+      onUpdate(editor.getHTML());
+    },
   });
 
   const rect = useCursorVisibility({
@@ -242,6 +258,20 @@ export function SimpleEditor() {
       setMobileView("main");
     }
   }, [isMobile, mobileView]);
+
+  // Update editor content when initialContent changes
+  React.useEffect(() => {
+    if (editor && editor.getHTML() !== initialContent) {
+      editor.commands.setContent(initialContent, { emitUpdate: false });
+    }
+  }, [initialContent, editor]);
+
+  // Update editor editable state
+  React.useEffect(() => {
+    if (editor) {
+      editor.setEditable(editable);
+    }
+  }, [editable, editor]);
 
   return (
     <div className="simple-editor-wrapper">

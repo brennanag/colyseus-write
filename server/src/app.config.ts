@@ -2,16 +2,11 @@ import config from "@colyseus/tools";
 import { monitor } from "@colyseus/monitor";
 import { playground } from "@colyseus/playground";
 import { auth } from "@colyseus/auth";
-import express from "express"; // Make sure this import exists
+// REMOVE: import express from "express";
+// REMOVE: import submissionsRoutes from "./routes/submissions";
 
-/**
- * Import your Room files
- */
 import { WritingRoom } from "./rooms/WritingRoom";
 import "./config/auth.ts";
-
-// IMPORT OUR NEW ROUTES
-import submissionsRoutes from "./routes/submissions";
 
 export default config({
   initializeGameServer: (gameServer) => {
@@ -19,16 +14,14 @@ export default config({
   },
 
   initializeExpress: (app) => {
-    // 🔍 ADD JSON MIDDLEWARE BACK - THIS IS CRITICAL
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
+    // REMOVE: app.use(express.json());
+    // REMOVE: app.use(express.urlencoded({ extended: true }));
 
-    app.get("/hello_world", (req, res) => {
+    app.get("/hello_world", (_req, res) => {
       res.send("It's time to kick ass and chew bubblegum!");
     });
 
-    // USE OUR SUBMISSIONS ROUTES
-    app.use("/api/submissions", submissionsRoutes);
+    // REMOVE: app.use("/api/submissions", submissionsRoutes);
 
     if (process.env.NODE_ENV !== "production") {
       app.use("/", playground());

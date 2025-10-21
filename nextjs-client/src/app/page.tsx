@@ -1,47 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import AuthForms from "../components/AuthForms";
 import { WritingGameState, Player } from "../schema/WritingGameState";
-import TiptapEditor from "@/components/TiptapEditor";
 import { DebugBar } from "@/components/debug/DebugBar";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { useAutoSave } from "../hooks/useAutoSave";
 
 export default function Home() {
   const { user, logout, client, room, setCurrentRoom } = useAuth();
   const [gameState, setGameState] = useState<WritingGameState | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [writingText, setWritingText] = useState("");
-  const [connectionStatus, setConnectionStatus] =
-    useState<string>("Disconnected");
-
-  console.log("Rendering Home component with:");
-
-  const { isSaving, lastSaved, error, manualSave } = useAutoSave({
-    roomId: room?.roomId || "",
-    playerId: user?.id || "",
-    content: writingText || "", // ← Ensure content is always a string, never undefined
-  });
-
-  // Interval-based auto-save that pulls from writingText state
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (writingText.length > 0 && room?.roomId && user?.id) {
-        console.log(
-          "🔄 INTERVAL AUTO-SAVE - Content length:",
-          writingText.length
-        );
-        console.log("📝 Content sample:", writingText.substring(0, 100));
-        manualSave();
-      } else if (writingText.length === 0) {
-        console.log("⏸️  Auto-save skipped: empty content");
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [writingText, room?.roomId, user?.id, manualSave]);
 
   const formatTime = (ms: number) => {
     return Math.ceil(ms / 1000);
@@ -82,37 +52,26 @@ export default function Home() {
     }
   };
 
-  const leaveRoom = async () => {
-    if (room) {
-      await room.leave();
-      setCurrentRoom(null);
-      setGameState(null);
-      setPlayers([]);
-      setWritingText("");
-    }
-  };
-
   const toggleReady = () => {
-    if (room) {
-      room.send("toggleReady");
-    }
+    if (!room) return;
+    room.send("toggleReady", {});
   };
 
   const submitWriting = () => {
-    if (room && writingText.trim()) {
-      room.send("submitWriting", { text: writingText.trim() });
-      setWritingText("");
-    }
+    if (!room || !writingText.trim()) return;
+    room.send("submitWriting", { content: writingText });
   };
 
   const nextRound = () => {
-    if (room) {
-      room.send("nextRound");
-    }
+    if (!room) return;
+    room.send("toggleReady", {});
   };
 
-  const getCurrentPlayer = (): Player | undefined => {
-    return players.find((player) => player.email === user?.email);
+  const getCurrentPlayer = () => {
+    if (!user || !gameState?.players) return null;
+    return Array.from(gameState.players.values()).find(
+      (player) => player.playerId === user.id
+    );
   };
 
   if (!user) {
@@ -129,7 +88,7 @@ export default function Home() {
             roomId={room?.roomId || null}
             playerCount={Number(gameState?.players.size) || 0}
             currentPhase={gameState?.phase || "connecting"}
-            connectionStatus={connectionStatus}
+            connectionStatus={"Connected"}
           />
           <div className="max-w-6xl mx-auto p-0">
             {/* Content container if needed */}
@@ -164,92 +123,53 @@ export default function Home() {
           <>
             {/* Players List */}
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-gray-900 mb-3">
-                  Players ({players.length})
-                </h2>
-                <button
-                  onClick={leaveRoom}
-                  className="px-3 py-1.5 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 transition-colors"
-                >
-                  Leave Room
-                </button>
-              </div>
-              <div className="flex flex-col gap-2">
+              <h3 className="text-lg font-semibold mb-3 text-gray-900">
+                Players
+              </h3>
+              <div className="flex flex-wrap gap-3">
                 {players.map((player) => (
                   <div
                     key={player.playerId}
-                    className={`flex justify-between items-center p-3 rounded-md ${
-                      player.email === user.email ? "bg-blue-50" : "bg-gray-100"
-                    }`}
+                    className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200"
                   >
-                    <div className="flex items-center">
-                      <span className="font-medium text-gray-900">
-                        {player.playerName}
+                    <span className="text-gray-700">{player.playerName}</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        player.isAuthenticated ? "bg-green-500" : "bg-gray-400"
+                      }`}
+                    />
+                    {gameState?.phase === "lobby" && (
+                      <span
+                        className={`text-sm ${
+                          player.isReady ? "text-green-600" : "text-gray-500"
+                        }`}
+                      >
+                        {player.isReady ? "✓ Ready" : "Not Ready"}
                       </span>
-                      {player.email === user.email && (
-                        <span className="text-xs text-blue-600 ml-1">
-                          (You)
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-4">
-                      {gameState?.phase === "lobby" && (
-                        <span
-                          className={`text-sm ${
-                            player.isReady ? "text-green-600" : "text-gray-500"
-                          }`}
-                        >
-                          {player.isReady ? "✓ Ready" : "Not Ready"}
-                        </span>
-                      )}
-                      {gameState?.phase === "writing" && (
-                        <span
-                          className={`text-sm ${
-                            player.hasSubmitted
-                              ? "text-green-600"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {player.hasSubmitted ? "✓ Submitted" : "Writing..."}
-                        </span>
-                      )}
-                      {gameState?.phase === "reading" && (
-                        <span
-                          className={`text-sm ${
-                            player.isReady ? "text-green-600" : "text-gray-500"
-                          }`}
-                        >
-                          {player.isReady ? "✓ Next Round" : "Reading..."}
-                        </span>
-                      )}
-                    </div>
+                    )}
+                    {gameState?.phase === "writing" && (
+                      <span
+                        className={`text-sm ${
+                          player.hasSubmitted
+                            ? "text-green-600"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {player.hasSubmitted ? "✓ Submitted" : "Writing..."}
+                      </span>
+                    )}
+                    {gameState?.phase === "reading" && (
+                      <span
+                        className={`text-sm ${
+                          player.isReady ? "text-green-600" : "text-gray-500"
+                        }`}
+                      >
+                        {player.isReady ? "✓ Next Round" : "Reading..."}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Auto-save status */}
-            <div className="flex justify-between items-center text-sm bg-yellow-50 p-2 rounded">
-              <div className="flex items-center space-x-2">
-                {isSaving ? (
-                  <>
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                    <span className="text-yellow-600">Saving...</span>
-                  </>
-                ) : lastSaved ? (
-                  <>
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-green-600">Auto-save active</span>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                    <span className="text-gray-600">Auto-save ready</span>
-                  </>
-                )}
-              </div>
-              {error && <span className="text-red-600">Auto-save error</span>}
             </div>
 
             {/* Game Content Based on Phase */}
@@ -324,28 +244,12 @@ export default function Home() {
                         seconds
                         {currentPlayer?.hasSubmitted && " • ✓ Submitted"}
                       </p>
-                      <textarea
-                        value={writingText}
-                        onChange={(e) => setWritingText(e.target.value)}
-                        placeholder="Write your story continuation..."
-                        className="min-h-[200px] p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
-                        disabled={currentPlayer?.hasSubmitted}
-                      />
 
-                      <div className="mt-2 p-2 bg-blue-50 rounded">
-                        <p className="text-sm text-blue-700">
-                          <strong>Debug:</strong> Textarea length:{" "}
-                          {writingText.length} chars
-                          {writingText.length > 0 &&
-                            " - Auto-save should work now!"}
-                        </p>
-                      </div>
-
-                      {/* <SimpleEditor
-                        content={writingText}
-                        onUpdate={(content) => setWritingText(content)}
+                      <SimpleEditor
+                        initialContent={writingText}
+                        onUpdate={(content: string) => setWritingText(content)}
                         editable={!currentPlayer?.hasSubmitted}
-                      /> */}
+                      />
 
                       <div className="flex justify-between items-center mt-4">
                         <p className="text-sm text-gray-600">
@@ -382,7 +286,7 @@ export default function Home() {
 
                 <div className="flex flex-col gap-6 mb-6">
                   {Array.from(gameState.stories?.entries() || []).map(
-                    ([storyId, story], index) => (
+                    ([storyId, story]: [string, any], index: number) => (
                       <div
                         key={storyId}
                         className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"
