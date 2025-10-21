@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Box, VStack, Text } from "@chakra-ui/react";
 import { Client, Room } from "colyseus.js";
 import { GameState } from "@/lib/types";
 import { DebugBar } from "@/components/debug/DebugBar";
@@ -17,6 +16,7 @@ interface GameClientProps {
     authToken: string;
   };
 }
+
 interface ColyseusGameState {
   phase: string;
   players: Map<string, any>;
@@ -139,7 +139,7 @@ export function GameClient({ user }: GameClientProps) {
 
   const renderCurrentPhase = () => {
     if (!gameState) {
-      return <Text>Connecting to server...</Text>;
+      return <p className="text-gray-700">Connecting to server...</p>;
     }
 
     switch (gameState.phase) {
@@ -186,7 +186,23 @@ export function GameClient({ user }: GameClientProps) {
         );
 
       default:
-        return <Text>Unknown phase: {gameState.phase}</Text>;
+        return (
+          <p className="text-gray-700">Unknown phase: {gameState.phase}</p>
+        );
     }
   };
+
+  return (
+    <div>
+      <DebugBar
+        roomId={room?.roomId || null}
+        playerCount={Object.keys(gameState?.players || {}).length}
+        currentPhase={gameState?.phase || "connecting"}
+        connectionStatus={connectionStatus}
+      />
+      <div className="max-w-6xl mx-auto p-0">
+        <div className="flex flex-col space-y-6">{renderCurrentPhase()}</div>
+      </div>
+    </div>
+  );
 }

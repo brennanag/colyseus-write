@@ -1,10 +1,6 @@
-'use client';
-import { useState } from 'react';
-import { 
-  Box, VStack, Heading, Text, Textarea, Button, 
-  Card, HStack, Badge 
-} from '@chakra-ui/react';
-import { WritingContribution } from '@/lib/types';
+"use client";
+import { useState } from "react";
+import { WritingContribution } from "@/lib/types";
 
 interface EditingPhaseProps {
   currentStory: string;
@@ -12,53 +8,64 @@ interface EditingPhaseProps {
   onSaveEdit: (editedStory: string) => void;
 }
 
-export function EditingPhase({ currentStory, contributions, onSaveEdit }: EditingPhaseProps) {
+export function EditingPhase({
+  currentStory,
+  contributions,
+  onSaveEdit,
+}: EditingPhaseProps) {
   const [editedContent, setEditedContent] = useState(currentStory);
 
   return (
-    <Box>
-      <VStack gap={6} align="stretch">
-        <Heading>Editing & Review Phase</Heading>
-        <Text>Collaboratively refine the story together</Text>
+    <div>
+      <div className="flex flex-col space-y-6">
+        <h1 className="text-2xl font-bold">Editing & Review Phase</h1>
+        <p className="text-gray-700">
+          Collaboratively refine the story together
+        </p>
 
-        <HStack gap={4} overflowX="auto" py={2}>
+        <div className="flex space-x-4 overflow-x-auto py-2">
           {contributions.map((contribution, index) => (
-            <Card.Root key={index} size="sm">
-              <Card.Body>
-                <VStack gap={2} align="start">
-                  <Badge colorPalette="purple">Round {contribution.round}</Badge>
-                  <Text fontWeight="bold">{contribution.playerName}</Text>
-                  <Text fontSize="sm">
+            <div
+              key={index}
+              className="bg-white border border-gray-200 rounded-lg shadow-sm min-w-[200px] flex-shrink-0"
+            >
+              <div className="p-4">
+                <div className="flex flex-col space-y-2 items-start">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    Round {contribution.round}
+                  </span>
+                  <p className="font-bold text-gray-900">
+                    {contribution.playerName}
+                  </p>
+                  <p className="text-sm text-gray-600">
                     {contribution.content}
-                  </Text>
-                </VStack>
-              </Card.Body>
-            </Card.Root>
+                  </p>
+                </div>
+              </div>
+            </div>
           ))}
-        </HStack>
+        </div>
 
-        <Box>
-          <Text fontWeight="bold" mb={2}>Current Story:</Text>
-          <Textarea
+        <div>
+          <p className="font-bold mb-2 text-gray-900">Current Story:</p>
+          <textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            minHeight="300px"
+            className="w-full min-h-[300px] p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
             placeholder="The collaborative story will appear here..."
           />
-        </Box>
+        </div>
 
-        <HStack justify="space-between">
-          <Text fontSize="sm" color="fg.subtle">
-            All players can suggest edits
-          </Text>
-          <Button 
-            colorPalette="green"
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-gray-500">All players can suggest edits</p>
+          <button
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
             onClick={() => onSaveEdit(editedContent)}
           >
             Save Edits
-          </Button>
-        </HStack>
-      </VStack>
-    </Box>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

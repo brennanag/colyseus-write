@@ -1,10 +1,6 @@
-'use client';
-import { useState } from 'react';
-import { 
-  Box, VStack, Heading, Text, Button, SimpleGrid, 
-  Card, Progress, Tag
-} from '@chakra-ui/react';
-import { Player, SetupStage } from '@/lib/types';
+"use client";
+import { useState } from "react";
+import { Player, SetupStage } from "@/lib/types";
 
 interface GameSetupPhaseProps {
   currentStage: SetupStage;
@@ -12,100 +8,136 @@ interface GameSetupPhaseProps {
   players: { [sessionId: string]: Player };
 }
 
-export function GameSetupPhase({ currentStage, onStageComplete }: GameSetupPhaseProps) {
-  const [selectedGenre, setSelectedGenre] = useState<string>('');
+export function GameSetupPhase({
+  currentStage,
+  onStageComplete,
+}: GameSetupPhaseProps) {
+  const [selectedGenre, setSelectedGenre] = useState<string>("");
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
 
-  const genres = ['Fantasy', 'Sci-Fi', 'Mystery', 'Romance', 'Horror', 'Contemporary'];
-  const themes = ['Redemption', 'Discovery', 'Transformation', 'Sacrifice', 'Justice', 'Love'];
+  const genres = [
+    "Fantasy",
+    "Sci-Fi",
+    "Mystery",
+    "Romance",
+    "Horror",
+    "Contemporary",
+  ];
+  const themes = [
+    "Redemption",
+    "Discovery",
+    "Transformation",
+    "Sacrifice",
+    "Justice",
+    "Love",
+  ];
 
   const renderGenreSelection = () => (
-    <VStack gap={4}>
-      <Heading size="md">Choose a Genre</Heading>
-      <SimpleGrid columns={2} gap={4} width="100%">
-        {genres.map(genre => (
-          <Card.Root 
-            key={genre} 
-            variant={selectedGenre === genre ? 'elevated' : 'outline'}
-            cursor="pointer"
+    <div className="flex flex-col space-y-4">
+      <h2 className="text-xl font-bold">Choose a Genre</h2>
+      <div className="grid grid-cols-2 gap-4 w-full">
+        {genres.map((genre) => (
+          <div
+            key={genre}
+            className={`border rounded-lg p-4 text-center cursor-pointer transition-colors ${
+              selectedGenre === genre
+                ? "bg-blue-100 border-blue-500 shadow-sm"
+                : "bg-white border-gray-200 hover:bg-gray-50"
+            }`}
             onClick={() => setSelectedGenre(genre)}
           >
-            <Card.Body textAlign="center">
-              <Text fontWeight="bold">{genre}</Text>
-            </Card.Body>
-          </Card.Root>
+            <p className="font-bold text-gray-900">{genre}</p>
+          </div>
         ))}
-      </SimpleGrid>
-      <Button 
-        colorPalette="blue" 
+      </div>
+      <button
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         disabled={!selectedGenre}
-        onClick={() => onStageComplete('genre_selection', { genre: selectedGenre })}
+        onClick={() =>
+          onStageComplete("genre_selection", { genre: selectedGenre })
+        }
       >
         Confirm Genre
-      </Button>
-    </VStack>
+      </button>
+    </div>
   );
 
   const renderThemeVoting = () => (
-    <VStack gap={4}>
-      <Heading size="md">Vote for Themes (Select 2-3)</Heading>
-      <SimpleGrid columns={2} gap={2} width="100%">
-        {themes.map(theme => (
-          <Tag.Root
+    <div className="flex flex-col space-y-4">
+      <h2 className="text-xl font-bold">Vote for Themes (Select 2-3)</h2>
+      <div className="grid grid-cols-2 gap-2 w-full">
+        {themes.map((theme) => (
+          <span
             key={theme}
-            size="lg"
-            colorPalette={selectedThemes.includes(theme) ? 'blue' : 'gray'}
-            cursor="pointer"
+            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium cursor-pointer transition-colors ${
+              selectedThemes.includes(theme)
+                ? "bg-blue-100 text-blue-800 border border-blue-300"
+                : "bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200"
+            }`}
             onClick={() => {
-              setSelectedThemes(prev => 
-                prev.includes(theme) 
-                  ? prev.filter(t => t !== theme)
+              setSelectedThemes((prev) =>
+                prev.includes(theme)
+                  ? prev.filter((t) => t !== theme)
                   : [...prev, theme]
               );
             }}
           >
-            <Tag.Label>{theme}</Tag.Label>
-          </Tag.Root>
+            {theme}
+          </span>
         ))}
-      </SimpleGrid>
-      <Button 
-        colorPalette="blue"
+      </div>
+      <button
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         disabled={selectedThemes.length < 2}
-        onClick={() => onStageComplete('theme_voting', { themes: selectedThemes })}
+        onClick={() =>
+          onStageComplete("theme_voting", { themes: selectedThemes })
+        }
       >
         Confirm Themes
-      </Button>
-    </VStack>
+      </button>
+    </div>
   );
 
   const getStageProgress = (): number => {
-    const stages: SetupStage[] = ['genre_selection', 'theme_voting', 'character_creation', 'setting_establishment'];
+    const stages: SetupStage[] = [
+      "genre_selection",
+      "theme_voting",
+      "character_creation",
+      "setting_establishment",
+    ];
     return (stages.indexOf(currentStage) / stages.length) * 100;
   };
 
   return (
-    <Box>
-      <VStack gap={6}>
-        <Heading>Game Setup</Heading>
-        <Text>Let's build the foundation of your story together</Text>
-        
-        <Progress.Root value={getStageProgress()} width="100%">
-          <Progress.Track>
-            <Progress.Range />
-          </Progress.Track>
-        </Progress.Root>
-        
-        <Box width="100%">
-          {currentStage === 'genre_selection' && renderGenreSelection()}
-          {currentStage === 'theme_voting' && renderThemeVoting()}
-          {currentStage === 'character_creation' && (
-            <Text>Character Creation Stage - To be implemented</Text>
+    <div>
+      <div className="flex flex-col space-y-6">
+        <h1 className="text-2xl font-bold">Game Setup</h1>
+        <p className="text-gray-700">
+          Let's build the foundation of your story together
+        </p>
+
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${getStageProgress()}%` }}
+          ></div>
+        </div>
+
+        <div className="w-full">
+          {currentStage === "genre_selection" && renderGenreSelection()}
+          {currentStage === "theme_voting" && renderThemeVoting()}
+          {currentStage === "character_creation" && (
+            <p className="text-gray-700">
+              Character Creation Stage - To be implemented
+            </p>
           )}
-          {currentStage === 'setting_establishment' && (
-            <Text>Setting Establishment Stage - To be implemented</Text>
+          {currentStage === "setting_establishment" && (
+            <p className="text-gray-700">
+              Setting Establishment Stage - To be implemented
+            </p>
           )}
-        </Box>
-      </VStack>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }

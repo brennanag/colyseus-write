@@ -3,7 +3,6 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
-import { Box, Button, HStack } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 
 interface TiptapEditorProps {
@@ -18,12 +17,6 @@ export default function TiptapEditor({
   isDisabled = false,
 }: TiptapEditorProps) {
   const [mounted, setMounted] = useState(false);
-
-  // Use semantic tokens from your theme
-  const editorBg = "bg.card";
-  const editorBorder = "border.default";
-  const editorText = "text.main";
-  const bubbleMenuBg = "bg.card";
 
   useEffect(() => {
     setMounted(true);
@@ -58,20 +51,9 @@ export default function TiptapEditor({
 
   if (!mounted) {
     return (
-      <Box
-        border="1px"
-        borderColor={editorBorder}
-        borderRadius="md"
-        p={3}
-        bg={editorBg}
-        minH="200px"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        color="text.subtle"
-      >
+      <div className="border border-gray-300 rounded-md p-3 bg-white min-h-[200px] flex items-center justify-center text-gray-500">
         Loading editor...
-      </Box>
+      </div>
     );
   }
 
@@ -80,91 +62,67 @@ export default function TiptapEditor({
   }
 
   return (
-    <Box position="relative">
+    <div className="relative">
       {/* Bubble Menu that appears when selecting text */}
       {editor && (
         <BubbleMenu editor={editor}>
-          <HStack
-            spacing={1}
-            p={2}
-            bg={bubbleMenuBg}
-            borderRadius="md"
-            shadow="md"
-            border="1px"
-            borderColor={editorBorder}
-          >
-            <Button
-              size="sm"
+          <div className="flex space-x-1 p-2 bg-white rounded-md shadow-md border border-gray-300">
+            <button
               onClick={() => editor.chain().focus().toggleBold().run()}
-              colorScheme={editor.isActive("bold") ? "blue" : "gray"}
-              variant={editor.isActive("bold") ? "solid" : "outline"}
-              isDisabled={isDisabled}
+              disabled={isDisabled}
+              className={`px-2 py-1 text-sm rounded ${
+                editor.isActive("bold")
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 border border-gray-300"
+              } ${
+                isDisabled
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-300"
+              }`}
             >
               B
-            </Button>
-            <Button
-              size="sm"
+            </button>
+            <button
               onClick={() => editor.chain().focus().toggleItalic().run()}
-              colorScheme={editor.isActive("italic") ? "blue" : "gray"}
-              variant={editor.isActive("italic") ? "solid" : "outline"}
-              isDisabled={isDisabled}
+              disabled={isDisabled}
+              className={`px-2 py-1 text-sm rounded ${
+                editor.isActive("italic")
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 border border-gray-300"
+              } ${
+                isDisabled
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-300"
+              }`}
             >
               I
-            </Button>
-            <Button
-              size="sm"
+            </button>
+            <button
               onClick={() => editor.chain().focus().toggleBulletList().run()}
-              colorScheme={editor.isActive("bulletList") ? "blue" : "gray"}
-              variant={editor.isActive("bulletList") ? "solid" : "outline"}
-              isDisabled={isDisabled}
+              disabled={isDisabled}
+              className={`px-2 py-1 text-sm rounded ${
+                editor.isActive("bulletList")
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 border border-gray-300"
+              } ${
+                isDisabled
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-300"
+              }`}
             >
               List
-            </Button>
-          </HStack>
+            </button>
+          </div>
         </BubbleMenu>
       )}
 
       {/* Editor Content */}
-      <Box
-        border="1px"
-        borderColor={editorBorder}
-        borderRadius="md"
-        bg={editorBg}
-        minH="200px"
-        sx={{
-          "& .ProseMirror": {
-            outline: "none",
-            minHeight: "180px",
-            fontFamily: "body",
-            fontSize: "md",
-            lineHeight: "1.6",
-            padding: "1rem",
-            color: editorText,
-            "& p": {
-              marginBottom: "0.75em",
-            },
-            "& ul, & ol": {
-              paddingLeft: "1.5em",
-              marginBottom: "0.75em",
-            },
-            "& h1, & h2, & h3, & h4, & h5, & h6": {
-              fontWeight: "bold",
-              marginBottom: "0.5em",
-            },
-            "& strong": {
-              fontWeight: "bold",
-            },
-            "& em": {
-              fontStyle: "italic",
-            },
-            "&:focus": {
-              borderColor: "blue.500",
-            },
-          },
-        }}
-      >
-        <EditorContent editor={editor} />
-      </Box>
-    </Box>
+      <div className="border border-gray-300 rounded-md bg-white min-h-[200px]">
+        <EditorContent
+          editor={editor}
+          className="prose max-w-none min-h-[180px] p-4 outline-none text-gray-900 font-sans text-base leading-relaxed"
+        />
+      </div>
+    </div>
   );
 }

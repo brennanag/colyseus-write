@@ -1,5 +1,4 @@
 "use client";
-import { HStack, Text, Badge, Box } from "@chakra-ui/react";
 
 interface DebugBarProps {
   roomId: string | null;
@@ -15,26 +14,28 @@ export function DebugBar({
   connectionStatus,
 }: DebugBarProps) {
   return (
-    <Box bg="gray.800" color="white" p={2} fontSize="sm">
-      <HStack gap={4} justify="space-between">
-        <HStack gap={4}>
-          <Text>
+    <div className="bg-gray-800 text-white p-2 text-sm">
+      <div className="flex justify-between items-center">
+        <div className="flex space-x-4">
+          <div>
             Status:{" "}
-            <Badge
-              colorPalette={
-                connectionStatus === "connected" ? "green" : "orange"
-              }
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                connectionStatus === "connected"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-orange-100 text-orange-800"
+              }`}
             >
               {connectionStatus}
-            </Badge>
-          </Text>
-          {roomId && <Text>Room: {roomId}</Text>}
-          <Text>Players: {playerCount}</Text>
-          <Text>Phase: {currentPhase}</Text>
-        </HStack>
+            </span>
+          </div>
+          {roomId && <div>Room: {roomId}</div>}
+          <div>Players: {playerCount}</div>
+          <div>Phase: {currentPhase}</div>
+        </div>
 
         {/* REMOVED MOCK ACTION BUTTONS */}
-      </HStack>
-    </Box>
+      </div>
+    </div>
   );
 }

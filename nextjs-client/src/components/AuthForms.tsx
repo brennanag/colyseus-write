@@ -1,84 +1,60 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import LoginForm from "./LoginForm";
+import RegisterForm from "./RegisterForm";
 
 export default function AuthForms() {
   const [activeTab, setActiveTab] = useState("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const { login, signup } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (activeTab === "login") {
-      login(email, password);
-    } else {
-      signup(email, password, name);
-    }
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-6 border border-gray-600 rounded-lg bg-gray-800">
-      {/* Tab buttons */}
-      <div className="flex mb-6">
+    <div className="max-w-md mx-auto mt-8 p-6 border border-gray-300 rounded-lg bg-white shadow-sm">
+      {/* Tabs */}
+      <div className="flex mb-6 border-b border-gray-200">
         <button
-          className={`flex-1 py-2 ${
-            activeTab === "login" ? "bg-blue-600" : "bg-gray-700"
+          className={`flex-1 py-3 px-4 text-center font-medium ${
+            activeTab === "login"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab("login")}
+          onClick={() => handleTabChange("login")}
         >
           Login
         </button>
         <button
-          className={`flex-1 py-2 ${
-            activeTab === "signup" ? "bg-blue-600" : "bg-gray-700"
+          className={`flex-1 py-3 px-4 text-center font-medium ${
+            activeTab === "register"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab("signup")}
+          onClick={() => handleTabChange("register")}
         >
-          Sign Up
+          Register
         </button>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {activeTab === "signup" && (
+      {/* Tab Content */}
+      <div>
+        {activeTab === "login" && (
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+            <LoginForm onSuccess={() => console.log("Login successful!")} />
+          </div>
+        )}
+        {activeTab === "register" && (
+          <div>
+            <RegisterForm
+              onSuccess={() => {
+                console.log("Registration successful!");
+                setActiveTab("login");
+              }}
             />
           </div>
         )}
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full py-2 bg-blue-600 rounded hover:bg-blue-700"
-        >
-          {activeTab === "login" ? "Login" : "Sign Up"}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
