@@ -1,8 +1,9 @@
+// components/TiptapEditor.tsx
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Box, Button, HStack } from "@chakra-ui/react";
+import { Box, Button, HStack, useColorModeValue } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 
 interface TiptapEditorProps {
@@ -17,6 +18,13 @@ export default function TiptapEditor({
   isDisabled = false,
 }: TiptapEditorProps) {
   const [mounted, setMounted] = useState(false);
+
+  // Replace the useColorModeValue hooks with your semantic tokens
+  const editorBg = "bg.card";
+  const editorText = "text.main";
+  const editorBorder = "border.default";
+  const toolbarBg = "bg.subtle";
+  const buttonHover = "action.hover";
 
   useEffect(() => {
     setMounted(true);
@@ -49,20 +57,19 @@ export default function TiptapEditor({
     }
   }, [editor, initialContent]);
 
-  // Don't render until mounted (client-side only)
   if (!mounted) {
     return (
       <Box
         border="1px"
-        borderColor="gray.300"
+        borderColor={editorBorder}
         borderRadius="md"
         p={3}
-        bg="red"
-        minH=""
+        bg={editorBg}
+        minH="150px"
         display="flex"
         alignItems="center"
         justifyContent="center"
-        color="gray.500"
+        color="text.subtle"
       >
         Loading editor...
       </Box>
@@ -74,15 +81,29 @@ export default function TiptapEditor({
   }
 
   return (
-    <Box border="1px" borderColor="gray.200" borderRadius="md" p={4} bg="white">
+    <Box
+      border="1px"
+      borderColor="border.default"
+      borderRadius="md"
+      p={4}
+      bg="bg.card"
+    >
       {/* Toolbar */}
-      <HStack gap={2} mb={4} flexWrap="wrap">
+      <HStack
+        gap={2}
+        mb={4}
+        flexWrap="wrap"
+        p={2}
+        bg="bg.subtle"
+        borderRadius="md"
+      >
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
           colorScheme={editor.isActive("bold") ? "blue" : "gray"}
           variant={editor.isActive("bold") ? "solid" : "outline"}
           disabled={isDisabled}
+          _hover={{ bg: buttonHover }}
         >
           B
         </Button>
@@ -92,6 +113,7 @@ export default function TiptapEditor({
           colorScheme={editor.isActive("italic") ? "blue" : "gray"}
           variant={editor.isActive("italic") ? "solid" : "outline"}
           disabled={isDisabled}
+          _hover={{ bg: buttonHover }}
         >
           I
         </Button>
@@ -101,42 +123,30 @@ export default function TiptapEditor({
           colorScheme={editor.isActive("bulletList") ? "blue" : "gray"}
           variant={editor.isActive("bulletList") ? "solid" : "outline"}
           disabled={isDisabled}
+          _hover={{ bg: buttonHover }}
         >
           List
         </Button>
       </HStack>
 
-      {/* Editor Content */}
+      {/* Editor Content with Chakra styling */}
       <Box
         border="1px"
-        borderColor="gray.300"
+        borderColor="border.default"
         borderRadius="md"
         p={3}
-        bg="colors.gray.950"
+        bg="bg.card"
         minH="150px"
         sx={{
           "& .ProseMirror": {
-            outline: "none",
-            minHeight: "120px",
-            fontFamily: "body",
-            fontSize: "md",
-            lineHeight: "1.6",
-            "& p": {
-              marginBottom: "0.75em",
+            // ... your styles using semantic tokens
+            color: "text.main",
+            "& p, & ul, & ol, & h1, & h2, & h3": {
+              color: "text.main",
             },
-            "& ul, & ol": {
-              paddingLeft: "1.5em",
-              marginBottom: "0.75em",
-            },
-            "& h1, & h2, & h3, & h4, & h5, & h6": {
-              fontWeight: "bold",
-              marginBottom: "0.5em",
-            },
-            "& strong": {
-              fontWeight: "bold",
-            },
-            "& em": {
-              fontStyle: "italic",
+            "& code": {
+              backgroundColor: "bg.subtle",
+              color: "text.main",
             },
           },
         }}

@@ -139,6 +139,10 @@ export default function Home() {
             <Button onClick={joinRoom} colorScheme="blue" size="lg">
               Join Writing Room
             </Button>
+            <TiptapEditor
+              onContentChange={(content) => setWritingText(content)}
+              isDisabled={currentPlayer?.hasSubmitted}
+            />
           </Box>
         ) : (
           <>

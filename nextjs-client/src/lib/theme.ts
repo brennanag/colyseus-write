@@ -88,6 +88,9 @@ const customConfig = defineConfig({
     semanticTokens: {
       colors: {
         // Background colors
+        "action.hover": {
+          value: { _light: "gray.100", _dark: "gray.600" },
+        },
         "bg.page": {
           value: { _light: "white", _dark: "{colors.gray.950}" },
         },
