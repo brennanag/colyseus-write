@@ -1,110 +1,92 @@
-// This is your Prisma schema file
-// It defines your database connection and data models
-
-// 1. DATABASE CONNECTION
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "sqlite"
-    url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
-// 2. DATA MODELS
 model Player {
-    id          String       @id @default(cuid())
-    createdAt   DateTime     @default(now())
-    username    String       @unique
-    email       String?      @unique
-    submissions Submission[]
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  username    String       @unique
+  email       String?      @unique
+  games       GamePlayer[]
+  submissions Submission[]
 
-    // Relationships
-    games GamePlayer[]
-
-    @@map("players")
+  @@map("players")
 }
 
 model Game {
-    id           String   @id @default(cuid())
-    createdAt    DateTime @default(now())
-    status       String // "lobby", "writing", "voting", "completed"
-    storyPrompt  String
-    currentStory String?
+  id           String       @id @default(cuid())
+  createdAt    DateTime     @default(now())
+  status       String
+  storyPrompt  String
+  currentStory String?
+  players      GamePlayer[]
+  rounds       Round[]
 
-    // Relationships
-    players GamePlayer[]
-    rounds  Round[]
-
-    @@map("games")
+  @@map("games")
 }
 
 model GamePlayer {
-    id       String @id @default(cuid())
-    playerId String
-    gameId   String
+  id       String @id @default(cuid())
+  playerId String
+  gameId   String
+  game     Game   @relation(fields: [gameId], references: [id])
+  player   Player @relation(fields: [playerId], references: [id])
 
-    // Relationships
-    player Player @relation(fields: [playerId], references: [id])
-    game   Game   @relation(fields: [gameId], references: [id])
-
-    @@unique([playerId, gameId]) // A player can only join a game once
-    @@map("game_players")
+  @@unique([playerId, gameId])
+  @@map("game_players")
 }
 
 model Round {
-    id          String   @id @default(cuid())
-    createdAt   DateTime @default(now())
-    gameId      String
-    roundNumber Int
-    prompt      String
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  gameId      String
+  roundNumber Int
+  prompt      String
+  game        Game         @relation(fields: [gameId], references: [id])
+  submissions Submission[]
 
-    // Relationships
-    game        Game         @relation(fields: [gameId], references: [id])
-    submissions Submission[]
-
-    @@map("rounds")
+  @@map("rounds")
 }
 
 model Submission {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    roundId   String
-    playerId  String
-    content   String
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  roundId   String
+  playerId  String
+  content   String
+  player    Player   @relation(fields: [playerId], references: [id])
+  round     Round    @relation(fields: [roundId], references: [id])
+  votes     Vote[]
 
-    // Relationships
-    round  Round  @relation(fields: [roundId], references: [id])
-    player Player @relation(fields: [playerId], references: [id])
-    votes  Vote[]
-
-    @@unique([roundId, playerId]) // One submission per player per round
-    @@map("submissions")
+  @@unique([roundId, playerId])
+  @@map("submissions")
 }
 
 model Vote {
-    id           String   @id @default(cuid())
-    createdAt    DateTime @default(now())
-    submissionId String
-    voterId      String // The player who cast the vote
+  id           String     @id @default(cuid())
+  createdAt    DateTime   @default(now())
+  submissionId String
+  voterId      String
+  submission   Submission @relation(fields: [submissionId], references: [id])
 
-    // Relationships
-    submission Submission @relation(fields: [submissionId], references: [id])
-
-    @@unique([submissionId, voterId]) // One vote per submission per voter
-    @@map("votes")
+  @@unique([submissionId, voterId])
+  @@map("votes")
 }
 
 model User {
-    id       String  @id @default(cuid())
-    email    String  @unique
-    password String // This will store the hashed password
-    name     String?
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@map("users")
+  @@map("users")
 }
 
 model AutoSave {
