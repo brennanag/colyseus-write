@@ -3,7 +3,7 @@ export const GAME_CONFIG = {
     lobbyCountdown: 15000, // 15 seconds
     writingPhase: 15000, // 15 seconds
     submissionGrace: 30000, // 30 seconds
-    betweenRoundsBuffer: 3000, // 3 seconds - NEW
+    betweenRoundsBuffer: 3000, // 3 seconds
   },
   requirements: {
     minPlayers: 2,
@@ -16,4 +16,8 @@ export const GAME_CONFIG = {
     "Write about a conversation between two people who are lying to each other, but the reader knows the truth",
     "A mysterious package arrives with no return address and instructions: 'Do not open until the full moon'",
   ],
+  // ADD AUTO-SAVE CONFIGURATION
+  autoSave: {
+    intervalMs: 15000, // 15 seconds
+  },
 } as const;

@@ -6,6 +6,7 @@ import AuthForms from "../components/AuthForms";
 import { WritingGameState, Player } from "../schema/WritingGameState";
 import TiptapEditor from "@/components/TiptapEditor";
 import { DebugBar } from "@/components/debug/DebugBar";
+import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 
 export default function Home() {
   const { user, logout, client, room, setCurrentRoom } = useAuth();
@@ -111,7 +112,7 @@ export default function Home() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-600">
               Welcome, {user.name || user.email}!
             </h1>
           </div>
@@ -131,10 +132,6 @@ export default function Home() {
             >
               Join Writing Room
             </button>
-            <TiptapEditor
-              onContentChange={(content) => setWritingText(content)}
-              isDisabled={currentPlayer?.hasSubmitted}
-            />
           </div>
         ) : (
           <>

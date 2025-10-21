@@ -106,3 +106,16 @@ model User {
 
     @@map("users")
 }
+
+model AutoSave {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  roomId      String
+  playerId    String
+  roundNumber Int
+  content     String
+
+  @@unique([roomId, playerId, roundNumber])
+  @@map("auto_saves")
+}
