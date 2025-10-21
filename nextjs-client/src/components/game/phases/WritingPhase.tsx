@@ -31,7 +31,6 @@ WritingPhaseProps) {
     }
   };
 
-  // Rest of your existing component remains exactly the same
   return (
     <div>
       <div className="flex flex-col space-y-6">

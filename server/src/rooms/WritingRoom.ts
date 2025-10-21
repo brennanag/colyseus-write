@@ -106,7 +106,21 @@ export class WritingRoom extends Room<WritingGameState> {
     });
 
     this.onMessage("submitWriting", (client, message) => {
-      this.handleWritingSubmission(client, message.text);
+      console.log("=== DEBUG: submitWriting message ===");
+      console.log("Full message:", message);
+      console.log("Message text:", message?.text);
+      console.log("Message content:", message?.content);
+
+      // Try both possible property names
+      const content = message?.content || message?.text;
+      console.log("Final content:", content);
+
+      if (!content) {
+        console.error("No content found in submitWriting message!");
+        return;
+      }
+
+      this.handleWritingSubmission(client, content);
     });
 
     this.onMessage("nextRound", (client) => {
@@ -246,8 +260,20 @@ export class WritingRoom extends Room<WritingGameState> {
   }
 
   private rotateStoryAssignments() {
+    console.log(`=== DEBUG: rotateStoryAssignments ===`);
+    console.log(`Current round: ${this.state.currentRound}`);
+
     const playersArray = Array.from(this.state.players.values());
     const storiesArray = Array.from(this.state.stories.values());
+
+    console.log(
+      `Players:`,
+      playersArray.map((p) => p.playerName)
+    );
+    console.log(
+      `Stories:`,
+      storiesArray.map((s) => s.storyId)
+    );
 
     // Simple rotation: each player gets the next story
     playersArray.forEach((player, playerIndex) => {
@@ -271,25 +297,49 @@ export class WritingRoom extends Room<WritingGameState> {
   }
 
   private handleWritingSubmission(client: Client, text: string) {
-    if (this.state.phase !== "writing") return;
+    console.log(`=== DEBUG: handleWritingSubmission called ===`);
+    console.log(`Phase: ${this.state.phase}`);
+    console.log(`Client session: ${client.sessionId}`);
+    console.log(`Text:`, text); // Changed from text.length to see actual value
+    console.log(`Text type:`, typeof text);
+
+    if (this.state.phase !== "writing") {
+      console.log(`ERROR: Not in writing phase!`);
+      return;
+    }
 
     const player = this.state.players.get(client.sessionId);
+    console.log(`Player found:`, player ? player.playerName : "NOT FOUND");
+
     if (!player) return;
 
     const assignedStoryId = this.state.currentAssignments.get(client.sessionId);
-    const story = this.state.stories.get(assignedStoryId!);
+    console.log(`Assigned story ID:`, assignedStoryId);
+
+    if (!assignedStoryId) {
+      console.log(`ERROR: No story assignment for player ${player.playerName}`);
+      return;
+    }
+
+    const story = this.state.stories.get(assignedStoryId);
+    console.log(`Story found:`, story ? story.storyId : "NOT FOUND");
 
     if (!story) return;
+
+    // ADD THIS CHECK - text is undefined!
+    if (text === undefined || text === null) {
+      console.error(`ERROR: Text is undefined for player ${player.playerName}`);
+      return;
+    }
 
     // Store this player's segment
     story.segments.set(player.playerId, text);
 
-    // REMOVED: The clunky segment markers
-    // REPLACED WITH: Clean continuous text with space between contributions
+    // Update accumulated content
     if (story.accumulatedContent) {
-      story.accumulatedContent += " "; // Add space between segments
+      story.accumulatedContent += " ";
     }
-    story.accumulatedContent += text; // Add the text directly
+    story.accumulatedContent += text;
 
     player.hasSubmitted = true;
 
