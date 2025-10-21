@@ -6,29 +6,21 @@ const router = Router();
 // Auto-save endpoint
 router.post("/auto-save", async (req, res) => {
   try {
-    const { roomId, playerId, content, roundNumber } = req.body;
+    const { roomId, playerId, content } = req.body; // Remove roundNumber
 
-    console.log("Auto-save received:", {
-      roomId,
-      playerId,
-      roundNumber,
-      contentLength: content.length,
-    });
-
-    if (!roomId || !playerId || !content || roundNumber === undefined) {
+    if (!roomId || !playerId || !content) {
       return res.status(400).json({
-        error:
-          "Missing required fields: roomId, playerId, content, roundNumber",
+        error: "Missing required fields: roomId, playerId, content",
       });
     }
 
-    // Store auto-save in database
+    // Store auto-save - one per player per room
     const autoSave = await prisma.autoSave.upsert({
       where: {
-        roomId_playerId_roundNumber: {
+        roomId_playerId: {
+          // Update unique constraint
           roomId,
           playerId,
-          roundNumber,
         },
       },
       update: {
@@ -38,12 +30,10 @@ router.post("/auto-save", async (req, res) => {
       create: {
         roomId,
         playerId,
-        roundNumber,
         content,
       },
     });
 
-    console.log("Auto-save successful:", autoSave.id);
     res.json({ success: true, autoSave });
   } catch (error) {
     console.error("Auto-save error:", error);

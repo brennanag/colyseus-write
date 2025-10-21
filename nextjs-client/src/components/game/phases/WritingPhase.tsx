@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useAutoSave } from "../../../hooks/useAutoSave"; // Add this import
 
 interface WritingPhaseProps {
   currentRound: number;
@@ -7,6 +8,9 @@ interface WritingPhaseProps {
   prompt: string;
   timeRemaining: number;
   onSubmitWriting: (content: string) => void;
+  roomId: string; // Add this prop
+  playerId: string; // Add this prop
+  roundNumber: number; // Add this prop
 }
 
 export function WritingPhase({
@@ -15,16 +19,22 @@ export function WritingPhase({
   prompt,
   timeRemaining,
   onSubmitWriting,
+  roomId, // Add this
+  playerId, // Add this
+  roundNumber, // Add this
 }: WritingPhaseProps) {
   const [writingContent, setWritingContent] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (writingContent.trim().length > 0) {
+      // Add final save before submit
+      await manualSave();
       onSubmitWriting(writingContent.trim());
       setWritingContent("");
     }
   };
 
+  // Rest of your existing component remains exactly the same
   return (
     <div>
       <div className="flex flex-col space-y-6">

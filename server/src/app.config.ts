@@ -2,7 +2,6 @@ import config from "@colyseus/tools";
 import { monitor } from "@colyseus/monitor";
 import { playground } from "@colyseus/playground";
 import { auth } from "@colyseus/auth";
-import express from "express"; // ADD THIS IMPORT
 
 /**
  * Import your Room files
@@ -19,10 +18,6 @@ export default config({
   },
 
   initializeExpress: (app) => {
-    // ADD PROPER MIDDLEWARE SETUP
-    app.use(express.json()); // Parse JSON request bodies
-    app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data
-
     app.get("/hello_world", (req, res) => {
       res.send("It's time to kick ass and chew bubblegum!");
     });

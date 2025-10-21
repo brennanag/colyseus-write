@@ -7,6 +7,7 @@ import { WritingGameState, Player } from "../schema/WritingGameState";
 import TiptapEditor from "@/components/TiptapEditor";
 import { DebugBar } from "@/components/debug/DebugBar";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+import { useAutoSave } from "../hooks/useAutoSave"; // Adjust path as needed
 
 export default function Home() {
   const { user, logout, client, room, setCurrentRoom } = useAuth();
@@ -15,6 +16,35 @@ export default function Home() {
   const [writingText, setWritingText] = useState("");
   const [connectionStatus, setConnectionStatus] =
     useState<string>("Disconnected");
+
+  console.log("Rendering Home component with:");
+
+  // ADD THESE LINES RIGHT AFTER your useState declarations:
+  const { isSaving, lastSaved, error, manualSave } = useAutoSave({
+    roomId: room?.roomId || "",
+    playerId: user?.id || "",
+    // NO content prop here
+  });
+
+  // ADD THIS useEffect for interval auto-save
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (writingText.length > 0 && room?.roomId && user?.id) {
+        console.log(
+          "🔄 INTERVAL AUTO-SAVE - Content length:",
+          writingText.length
+        );
+        console.log("📝 Content sample:", writingText.substring(0, 100));
+
+        // Call manualSave to trigger the save
+        manualSave();
+      } else if (writingText.length === 0) {
+        console.log("⏸️  Auto-save skipped: empty content");
+      }
+    }, 10000); // Every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [writingText, room?.roomId, user?.id, manualSave]);
 
   const formatTime = (ms: number) => {
     return Math.ceil(ms / 1000);
@@ -275,9 +305,10 @@ export default function Home() {
                         {currentPlayer?.hasSubmitted && " • ✓ Submitted"}
                       </p>
 
-                      <TiptapEditor
-                        onContentChange={(content) => setWritingText(content)}
-                        isDisabled={currentPlayer?.hasSubmitted}
+                      <SimpleEditor
+                        content={writingText}
+                        onUpdate={(content) => setWritingText(content)}
+                        editable={!currentPlayer?.hasSubmitted}
                       />
 
                       <div className="flex justify-between items-center mt-4">

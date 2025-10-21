@@ -95,9 +95,8 @@ model AutoSave {
   updatedAt   DateTime @updatedAt
   roomId      String
   playerId    String
-  roundNumber Int
   content     String
 
-  @@unique([roomId, playerId, roundNumber])
+  @@unique([roomId, playerId]) // Simplified - one auto-save per player per room
   @@map("auto_saves")
 }

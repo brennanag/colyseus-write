@@ -71,15 +71,17 @@ export function GameClient({ user }: GameClientProps) {
         room.onStateChange((state: ColyseusGameState) => {
           console.log("State changed, converting to JSON...");
 
-          // Convert Colyseus MapSchema to regular object
+          // CORRECT WAY to convert Colyseus MapSchema
           const playersObject = state.players
-            ? Object.fromEntries(state.players.$items.entries())
+            ? Object.fromEntries(state.players.entries()) // ← Remove .$items
             : {};
 
           const plainState = {
             ...state,
             players: playersObject,
           };
+
+          console.log("🔍 Converted state:", plainState);
           setGameState(plainState as any);
         });
 
@@ -91,7 +93,7 @@ export function GameClient({ user }: GameClientProps) {
         const initialState = {
           ...room.state,
           players: room.state.players
-            ? Object.fromEntries(room.state.players.entries())
+            ? Object.fromEntries(room.state.players.entries()) // ← Remove .$items here too
             : {},
         };
         setGameState(initialState as any);
@@ -142,6 +144,11 @@ export function GameClient({ user }: GameClientProps) {
       return <p className="text-gray-700">Connecting to server...</p>;
     }
 
+    console.log("🔍 CURRENT GAME STATE:", gameState);
+    console.log("🔍 Available gameState keys:", Object.keys(gameState));
+    console.log("🔍 Room ID:", room?.roomId);
+    console.log("🔍 User ID:", user.userId);
+
     switch (gameState.phase) {
       case "lobby":
         return <LobbyPhase players={gameState.players} onReady={handleReady} />;
@@ -156,6 +163,14 @@ export function GameClient({ user }: GameClientProps) {
         );
 
       case "writing":
+        console.log("🔍 WritingPhase props:", {
+          roomId: room?.roomId,
+          playerId: user.userId,
+          roundNumber: gameState.currentWritingRound || 1,
+          hasRoom: !!room,
+          hasUser: !!user,
+        });
+
         return (
           <WritingPhase
             currentRound={gameState.currentWritingRound}
@@ -163,9 +178,11 @@ export function GameClient({ user }: GameClientProps) {
             prompt={gameState.currentStory}
             timeRemaining={300}
             onSubmitWriting={handleSubmitWriting}
+            roomId={room?.roomId || ""}
+            playerId={user.userId}
+            roundNumber={gameState.currentWritingRound || 1}
           />
         );
-
       case "editing":
         return (
           <EditingPhase
