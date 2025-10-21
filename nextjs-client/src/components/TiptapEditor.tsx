@@ -1,9 +1,9 @@
-// components/TiptapEditor.tsx
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
-import { Box, Button, HStack, useColorModeValue } from "@chakra-ui/react";
+import { Box, Button, HStack } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 
 interface TiptapEditorProps {
@@ -19,12 +19,11 @@ export default function TiptapEditor({
 }: TiptapEditorProps) {
   const [mounted, setMounted] = useState(false);
 
-  // Replace the useColorModeValue hooks with your semantic tokens
+  // Use semantic tokens from your theme
   const editorBg = "bg.card";
-  const editorText = "text.main";
   const editorBorder = "border.default";
-  const toolbarBg = "bg.subtle";
-  const buttonHover = "action.hover";
+  const editorText = "text.main";
+  const bubbleMenuBg = "bg.card";
 
   useEffect(() => {
     setMounted(true);
@@ -65,7 +64,7 @@ export default function TiptapEditor({
         borderRadius="md"
         p={3}
         bg={editorBg}
-        minH="150px"
+        minH="200px"
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -81,72 +80,85 @@ export default function TiptapEditor({
   }
 
   return (
-    <Box
-      border="1px"
-      borderColor="border.default"
-      borderRadius="md"
-      p={4}
-      bg="bg.card"
-    >
-      {/* Toolbar */}
-      <HStack
-        gap={2}
-        mb={4}
-        flexWrap="wrap"
-        p={2}
-        bg="bg.subtle"
-        borderRadius="md"
-      >
-        <Button
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          colorScheme={editor.isActive("bold") ? "blue" : "gray"}
-          variant={editor.isActive("bold") ? "solid" : "outline"}
-          disabled={isDisabled}
-          _hover={{ bg: buttonHover }}
-        >
-          B
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          colorScheme={editor.isActive("italic") ? "blue" : "gray"}
-          variant={editor.isActive("italic") ? "solid" : "outline"}
-          disabled={isDisabled}
-          _hover={{ bg: buttonHover }}
-        >
-          I
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          colorScheme={editor.isActive("bulletList") ? "blue" : "gray"}
-          variant={editor.isActive("bulletList") ? "solid" : "outline"}
-          disabled={isDisabled}
-          _hover={{ bg: buttonHover }}
-        >
-          List
-        </Button>
-      </HStack>
+    <Box position="relative">
+      {/* Bubble Menu that appears when selecting text */}
+      {editor && (
+        <BubbleMenu editor={editor}>
+          <HStack
+            spacing={1}
+            p={2}
+            bg={bubbleMenuBg}
+            borderRadius="md"
+            shadow="md"
+            border="1px"
+            borderColor={editorBorder}
+          >
+            <Button
+              size="sm"
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              colorScheme={editor.isActive("bold") ? "blue" : "gray"}
+              variant={editor.isActive("bold") ? "solid" : "outline"}
+              isDisabled={isDisabled}
+            >
+              B
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              colorScheme={editor.isActive("italic") ? "blue" : "gray"}
+              variant={editor.isActive("italic") ? "solid" : "outline"}
+              isDisabled={isDisabled}
+            >
+              I
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              colorScheme={editor.isActive("bulletList") ? "blue" : "gray"}
+              variant={editor.isActive("bulletList") ? "solid" : "outline"}
+              isDisabled={isDisabled}
+            >
+              List
+            </Button>
+          </HStack>
+        </BubbleMenu>
+      )}
 
-      {/* Editor Content with Chakra styling */}
+      {/* Editor Content */}
       <Box
         border="1px"
-        borderColor="border.default"
+        borderColor={editorBorder}
         borderRadius="md"
-        p={3}
-        bg="bg.card"
-        minH="150px"
+        bg={editorBg}
+        minH="200px"
         sx={{
           "& .ProseMirror": {
-            // ... your styles using semantic tokens
-            color: "text.main",
-            "& p, & ul, & ol, & h1, & h2, & h3": {
-              color: "text.main",
+            outline: "none",
+            minHeight: "180px",
+            fontFamily: "body",
+            fontSize: "md",
+            lineHeight: "1.6",
+            padding: "1rem",
+            color: editorText,
+            "& p": {
+              marginBottom: "0.75em",
             },
-            "& code": {
-              backgroundColor: "bg.subtle",
-              color: "text.main",
+            "& ul, & ol": {
+              paddingLeft: "1.5em",
+              marginBottom: "0.75em",
+            },
+            "& h1, & h2, & h3, & h4, & h5, & h6": {
+              fontWeight: "bold",
+              marginBottom: "0.5em",
+            },
+            "& strong": {
+              fontWeight: "bold",
+            },
+            "& em": {
+              fontStyle: "italic",
+            },
+            "&:focus": {
+              borderColor: "blue.500",
             },
           },
         }}
