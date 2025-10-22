@@ -1,8 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { Client, Room } from "colyseus.js";
-import { WritingGameState } from "../schema/WritingGameState";
+import { Client } from "colyseus.js";
 
 // Create the Colyseus client instance
 const client = new Client("ws://localhost:2567");
@@ -13,21 +12,19 @@ interface User {
   name: string | null;
 }
 
+// Clean interface - only authentication responsibilities
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   client: Client;
-  room: Room<any> | null;
-  setCurrentRoom: (room: Room<any> | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [room, setRoom] = useState<Room<WritingGameState> | null>(null);
 
   const register = async (email: string, password: string, name: string) => {
     const response = await client.auth.registerWithEmailAndPassword(
@@ -47,19 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    // Leave room if joined
-    if (room) {
-      await room.leave();
-      setRoom(null);
-    }
-
-    // Sign out from auth
     await client.auth.signOut();
     setUser(null);
-  };
-
-  const setCurrentRoom = (newRoom: Room<WritingGameState> | null) => {
-    setRoom(newRoom);
   };
 
   return (
@@ -70,8 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         client,
-        room,
-        setCurrentRoom,
       }}
     >
       {children}

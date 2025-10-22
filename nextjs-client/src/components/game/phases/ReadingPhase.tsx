@@ -1,11 +1,13 @@
 "use client";
 
-import { WritingGameState, Player } from "@/schema/WritingGameState";
+import { WritingGameState, Player } from "../../../schema/WritingGameState";
+import { useGame } from "../../../contexts/GameContext";
 
+// Minimal props - most data comes from GameContext
 interface ReadingPhaseProps {
   gameState: WritingGameState;
   currentPlayer: Player | null | undefined;
-  onBackToLobby: () => void; // Changed from onNextRound
+  onBackToLobby: () => void;
 }
 
 export function ReadingPhase({
@@ -13,12 +15,15 @@ export function ReadingPhase({
   currentPlayer,
   onBackToLobby,
 }: ReadingPhaseProps) {
+  const { isSubmitting } = useGame();
+
   return (
     <div className="--bg-primary p-4 rounded-lg border --border-color">
       <h3 className="text-xl font-normal mb-2 --text-secondary">
         Read the Completed Stories
       </h3>
 
+      {/* Stories Display */}
       <div className="flex flex-col gap-6 mb-6">
         {Array.from(gameState.stories?.entries() || []).map(
           ([storyId, story]: [string, any], index: number) => (
@@ -41,6 +46,7 @@ export function ReadingPhase({
         )}
       </div>
 
+      {/* Ready for Next Game */}
       <div className="text-center">
         <p className="mb-4 --text-secondary">
           {currentPlayer?.isReady
@@ -49,7 +55,8 @@ export function ReadingPhase({
         </p>
         <button
           onClick={onBackToLobby}
-          className={`px-6 py-3 rounded-lg text-lg ${
+          disabled={isSubmitting}
+          className={`px-6 py-3 rounded-lg text-lg font-medium ${
             currentPlayer?.isReady
               ? "bg-green-600 hover:bg-green-700"
               : "bg-blue-600 hover:bg-blue-700"
