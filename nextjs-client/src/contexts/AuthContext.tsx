@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { Client, Room } from 'colyseus.js';
-import { WritingGameState } from '../schema/WritingGameState';
+import { createContext, useContext, useState, ReactNode } from "react";
+import { Client, Room } from "colyseus.js";
+import { WritingGameState } from "../schema/WritingGameState";
 
 // Create the Colyseus client instance
-const client = new Client('ws://localhost:2567');
+const client = new Client("ws://localhost:2567");
 
 interface User {
   id: string;
@@ -19,8 +19,8 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   client: Client;
-  room: Room<WritingGameState> | null;
-  setCurrentRoom: (room: Room<WritingGameState> | null) => void;
+  room: Room<any> | null;
+  setCurrentRoom: (room: Room<any> | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,15 +31,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, password: string, name: string) => {
     const response = await client.auth.registerWithEmailAndPassword(
-      email, 
-      password, 
+      email,
+      password,
       { name }
     );
     setUser(response.user);
   };
 
   const login = async (email: string, password: string) => {
-    const response = await client.auth.signInWithEmailAndPassword(email, password);
+    const response = await client.auth.signInWithEmailAndPassword(
+      email,
+      password
+    );
     setUser(response.user);
   };
 
@@ -49,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await room.leave();
       setRoom(null);
     }
-    
+
     // Sign out from auth
     await client.auth.signOut();
     setUser(null);
@@ -60,15 +63,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      register, 
-      logout, 
-      client,
-      room,
-      setCurrentRoom 
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        client,
+        room,
+        setCurrentRoom,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -77,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

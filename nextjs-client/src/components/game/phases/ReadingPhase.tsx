@@ -1,55 +1,64 @@
 "use client";
-import { ChatMessage, Player } from "@/lib/types";
+
+import { WritingGameState, Player } from "@/schema/WritingGameState";
 
 interface ReadingPhaseProps {
-  finalStory: string;
-  chatMessages: ChatMessage[];
-  players: { [sessionId: string]: Player };
-  onSendMessage: (message: string) => void;
+  gameState: WritingGameState;
+  currentPlayer: Player | null | undefined;
+  onBackToLobby: () => void; // Changed from onNextRound
 }
 
-export function ReadingPhase({ finalStory, chatMessages }: ReadingPhaseProps) {
+export function ReadingPhase({
+  gameState,
+  currentPlayer,
+  onBackToLobby,
+}: ReadingPhaseProps) {
   return (
-    <div className="flex space-x-6 items-start h-[600px]">
-      {/* Story Display */}
-      <div className="flex-2 h-full overflow-y-auto">
-        <div className="flex flex-col space-y-4">
-          <h1 className="text-xl font-bold">Your Collaborative Story</h1>
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-            <div className="p-4">
-              <p className="whitespace-pre-wrap text-gray-900">{finalStory}</p>
+    <div className="--bg-primary p-4 rounded-lg border --border-color">
+      <h3 className="text-xl font-normal mb-2 --text-secondary">
+        Read the Completed Stories
+      </h3>
+
+      <div className="flex flex-col gap-6 mb-6">
+        {Array.from(gameState.stories?.entries() || []).map(
+          ([storyId, story]: [string, any], index: number) => (
+            <div
+              key={storyId}
+              className="--bg-secondary p-4 rounded-lg shadow-sm border --border-color"
+            >
+              <p className="font-light mb-2 text-base --text-secondary">
+                Story {index + 1} Prompt: "{story.originalPrompt}"
+              </p>
+              <div
+                className="p-4 rounded-md text-base leading-relaxed --bg-secondary prose max-w-none"
+                dangerouslySetInnerHTML={{
+                  __html: story.accumulatedContent || "",
+                }}
+              />
+              <hr className="my-4 --border-color" />
             </div>
-          </div>
-        </div>
+          )
+        )}
       </div>
 
-      {/* Chat Panel */}
-      <div className="flex-1 h-full">
-        <div className="flex flex-col space-y-4 h-full">
-          <h2 className="text-lg font-bold">Group Chat</h2>
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex-1">
-            <div className="p-4 h-full">
-              <div className="flex flex-col space-y-3 h-full overflow-y-auto">
-                {chatMessages.map((message, index) => (
-                  <div key={index}>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-xs font-bold">
-                        {message.playerName.charAt(0)}
-                      </div>
-                      <p className="font-bold text-gray-900">
-                        {message.playerName}:
-                      </p>
-                      <p className="text-gray-700">{message.content}</p>
-                    </div>
-                    {index < chatMessages.length - 1 && (
-                      <hr className="my-2 border-gray-300" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="text-center">
+        <p className="mb-4 --text-secondary">
+          {currentPlayer?.isReady
+            ? "✓ Waiting for other players to be ready"
+            : "Click when you're ready for a new game"}
+        </p>
+        <button
+          onClick={onBackToLobby}
+          className={`px-6 py-3 rounded-lg text-lg ${
+            currentPlayer?.isReady
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-blue-600 hover:bg-blue-700"
+          } text-white transition-colors`}
+        >
+          {currentPlayer?.isReady
+            ? "✓ Ready for New Game"
+            : "Ready for New Game"}
+        </button>
       </div>
     </div>
   );

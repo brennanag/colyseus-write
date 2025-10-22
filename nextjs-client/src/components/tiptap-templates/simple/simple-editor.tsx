@@ -78,8 +78,8 @@ import "@/components/tiptap-templates/simple/simple-editor.scss";
 
 // Add props interface
 interface SimpleEditorProps {
-  initialContent: string;
-  onUpdate: (content: string) => void;
+  initialContent?: string;
+  onUpdate?: (content: string) => void;
   editable?: boolean;
 }
 
@@ -94,16 +94,16 @@ const MainToolbarContent = ({
 }) => {
   return (
     <>
-      <Spacer />
+      {/* <Spacer /> */}
 
       <ToolbarGroup>
         <UndoRedoButton action="undo" />
         <UndoRedoButton action="redo" />
       </ToolbarGroup>
 
-      <ToolbarSeparator />
+      {/* <ToolbarSeparator /> */}
 
-      <ToolbarGroup>
+      {/* <ToolbarGroup>
         <HeadingDropdownMenu levels={[1, 2, 3, 4]} portal={isMobile} />
         <ListDropdownMenu
           types={["bulletList", "orderedList", "taskList"]}
@@ -111,7 +111,7 @@ const MainToolbarContent = ({
         />
         <BlockquoteButton />
         <CodeBlockButton />
-      </ToolbarGroup>
+      </ToolbarGroup> */}
 
       <ToolbarSeparator />
 
@@ -119,7 +119,7 @@ const MainToolbarContent = ({
         <MarkButton type="bold" />
         <MarkButton type="italic" />
         <MarkButton type="strike" />
-        <MarkButton type="code" />
+        {/* <MarkButton type="code" /> */}
         <MarkButton type="underline" />
         {!isMobile ? (
           <ColorHighlightPopover />
@@ -130,28 +130,28 @@ const MainToolbarContent = ({
       </ToolbarGroup>
 
       <ToolbarSeparator />
-
+      {/* 
       <ToolbarGroup>
         <MarkButton type="superscript" />
         <MarkButton type="subscript" />
       </ToolbarGroup>
 
-      <ToolbarSeparator />
+      <ToolbarSeparator /> */}
 
       <ToolbarGroup>
         <TextAlignButton align="left" />
         <TextAlignButton align="center" />
         <TextAlignButton align="right" />
-        <TextAlignButton align="justify" />
+        {/* <TextAlignButton align="justify" /> */}
       </ToolbarGroup>
-
+      {/* 
       <ToolbarSeparator />
 
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
       </ToolbarGroup>
 
-      <Spacer />
+      <Spacer /> */}
 
       {isMobile && <ToolbarSeparator />}
 
@@ -192,8 +192,8 @@ const MobileToolbarContent = ({
 );
 
 export function SimpleEditor({
-  initialContent,
-  onUpdate,
+  initialContent = "", // Default content
+  onUpdate = () => {}, // No-op default
   editable = true,
 }: SimpleEditorProps) {
   const isMobile = useIsMobile();
@@ -224,7 +224,7 @@ export function SimpleEditor({
         },
       }),
       HorizontalRule,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextAlign.configure({ defaultAlignment: "left", types: ["paragraph"] }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),

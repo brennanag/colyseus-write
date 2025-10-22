@@ -19,7 +19,7 @@ export function AuthSection({ onSignIn, loading = false }: AuthSectionProps) {
 
   return (
     <div className="w-full max-w-[400px] mx-auto">
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div className="card">
         <div className="p-6">
           <div className="flex flex-col space-y-6">
             <div className="flex flex-col space-y-2 text-center">

@@ -10,24 +10,32 @@ interface JWTPayload {
 }
 
 export class WritingRoom extends Room<WritingGameState> {
+  maxClients = GAME_CONFIG.requirements.maxPlayers;
+
   private currentPhaseTimeout!: NodeJS.Timeout;
   private timerInterval!: NodeJS.Timeout;
 
   static async onAuth(token: string) {
-    console.log("Received token in onAuth:", token);
-
     try {
       const payload = (await JWT.verify(token)) as JWTPayload;
-      console.log("Token verified successfully for user:", payload.email);
+      // console.log("Token verified successfully for user:", payload.email);
       return payload;
     } catch (error) {
-      console.error("Token verification failed:", error);
+      // console.error("Token verification failed:", error);
       throw new Error("Authentication failed");
     }
   }
 
   onCreate() {
     console.log("WritingRoom created!", this.roomId);
+
+    // WritingRoom.ts - Set room metadata in onCreate()
+    this.setMetadata({
+      name: "Writing Room", //options.roomName ||
+      // host: auth.name,
+      // settings: options.customSettings,
+      // hasPassword: !!options.password,
+    });
 
     this.setState(new WritingGameState());
     this.initializeGame();
@@ -105,6 +113,10 @@ export class WritingRoom extends Room<WritingGameState> {
       this.handlePlayerReady(client);
     });
 
+    this.onMessage("backToLobby", (client) => {
+      this.handleBackToLobby();
+    });
+
     this.onMessage("submitWriting", (client, message) => {
       console.log("=== DEBUG: submitWriting message ===");
       console.log("Full message:", message);
@@ -126,6 +138,35 @@ export class WritingRoom extends Room<WritingGameState> {
     this.onMessage("nextRound", (client) => {
       this.handleNextRound(client);
     });
+  }
+
+  private handleBackToLobby() {
+    console.log("Returning to lobby phase");
+
+    // Clear any ongoing timers
+    if (this.currentPhaseTimeout) {
+      clearTimeout(this.currentPhaseTimeout);
+    }
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+
+    // Reset game state to lobby
+    this.state.stories.clear();
+    this.state.currentAssignments.clear();
+    this.state.currentRound = 0;
+    this.state.phase = "lobby";
+    this.state.timerEndsAt = 0;
+    this.state.timeRemaining = 0;
+
+    // Reset player states
+    this.state.players.forEach((player) => {
+      player.isReady = false;
+      player.hasSubmitted = false;
+    });
+    this.state.readyStates.clear();
+
+    console.log("Back in lobby - ready for new game");
   }
 
   private handlePlayerReady(client: Client) {

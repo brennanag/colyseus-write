@@ -12,7 +12,7 @@ export default function AuthForms() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-6 border border-gray-300 rounded-lg bg-white shadow-sm">
+    <div className="max-w-md mx-auto mt-8 p-6 card shadow-sm">
       {/* Tabs */}
       <div className="flex mb-6 border-b border-gray-200">
         <button

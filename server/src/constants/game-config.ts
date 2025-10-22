@@ -7,7 +7,7 @@ export const GAME_CONFIG = {
   },
   requirements: {
     minPlayers: 2,
-    maxPlayers: 8,
+    maxPlayers: 2,
   },
   prompts: [
     "Write a story that begins with: 'The door creaked open, and I knew I shouldn't have come back...'",
