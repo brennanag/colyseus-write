@@ -1,12 +1,13 @@
 "use client";
 
 import { useAuth } from "../contexts/AuthContext";
-import { useRoom } from "../contexts/RoomContext";
+import { RoomProvider, useRoom } from "../contexts/RoomContext";
 import AuthForms from "../components/AuthForms";
 import { LobbyEntry } from "../components/lobby/LobbyEntry";
 import { LobbyBrowser } from "../components/lobby/LobbyBrowser";
 import { GameView } from "../components/game/GameView";
 import { ReadingView } from "../components/reading/ReadingView"; // NEW IMPORT
+import { Room } from "colyseus.js";
 
 /**
  * Main application component - Clean orchestration layer
@@ -51,9 +52,9 @@ function AppHeader({ user, onLogout }: AppHeaderProps) {
         <h1 className="text-xl font-semibold --text-secondary">
           Welcome, {user.name || user.email}
         </h1>
-        {/* <p className="text-sm text-gray-600 mt-1">
-          Collaborative Writing Platform
-        </p> */}
+        <p className="text-sm text-gray-600 mt-1">
+          phase: {roomType}
+        </p>
       </div>
 
       {/* <button
@@ -64,7 +65,7 @@ function AppHeader({ user, onLogout }: AppHeaderProps) {
       </button> */}
       <button
         onClick={onLogout}
-        className="px-4 py-2 border --border-color rounded-md --text-secondary hover:--border-color transition-colors"
+        className="px-4 py-2 btn btn-hover"
       >
         Logout
       </button>

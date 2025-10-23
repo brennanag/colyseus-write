@@ -13,7 +13,7 @@
   --text-primary: #ffffff;
   --text-secondary: #a3a3a3;
   --text-accent: #3b82f6;
-  --border-color: #404040;
+  --border-color: #2f2f2f;
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --error-color: #ef4444;
@@ -35,10 +35,12 @@ body {
 
 /* Custom component styles */
 .card {
+  isolation: isolate;
   color: var(--text-secondary);
   background-color: var(--bg-secondary);
-  /* border: 1px solid var(--border-color); */
-  border-radius: 0.5rem;
+  /* background:  linear-gradient(134deg,rgba(255,255,255,.08),rgba(255,255,255,.02),rgba(255,255,255,0) 20%); */
+  border: .5px solid var(--border-color);
+  border-radius: 0.25rem;
   padding: 1rem;
 }
 
