@@ -3,8 +3,7 @@ import { JWT } from "@colyseus/auth";
 import { WritingGameState, Player, Story } from "./schema/WritingGameState";
 import { GAME_CONFIG } from "../constants/game-config";
 import { prisma } from "../lib/prisma";
-// import * as Diff from 'diff';
-const Diff = require("diff");
+import { Diff } from "diff";
 
 interface JWTPayload {
   email: string;
@@ -21,6 +20,7 @@ interface CreateStoryData {
 export class WritingRoom extends Room<WritingGameState> {
   private currentPhaseTimeout!: NodeJS.Timeout;
   private timerInterval!: NodeJS.Timeout;
+  private lobbyCountdownInterval!: NodeJS.Timeout;
   private gameSessionId!: string;
   maxClients = GAME_CONFIG.requirements.maxPlayers;
 
@@ -65,6 +65,12 @@ export class WritingRoom extends Room<WritingGameState> {
         }
         this.state.players.delete(sessionId);
         this.state.readyStates.delete(sessionId);
+
+        // Remove from readyOrder if present
+        const readyIndex = this.state.readyOrder.indexOf(sessionId);
+        if (readyIndex > -1) {
+          this.state.readyOrder.splice(readyIndex, 1);
+        }
       }
     });
 
@@ -83,7 +89,6 @@ export class WritingRoom extends Room<WritingGameState> {
     console.log(
       `Player ${auth.email} added. Total players: ${this.state.players.size}`
     );
-    this.checkLobbyStart();
   }
 
   async onLeave(client: Client) {
@@ -96,6 +101,12 @@ export class WritingRoom extends Room<WritingGameState> {
       this.state.players.delete(client.sessionId);
       this.state.readyStates.delete(client.sessionId);
       this.state.currentAssignments.delete(client.sessionId);
+
+      // Remove from readyOrder if present
+      const readyIndex = this.state.readyOrder.indexOf(client.sessionId);
+      if (readyIndex > -1) {
+        this.state.readyOrder.splice(readyIndex, 1);
+      }
     }
 
     if (this.state.phase === "lobby") {
@@ -114,7 +125,7 @@ export class WritingRoom extends Room<WritingGameState> {
     });
     console.log("Game session created:", gameSession.id);
     return gameSession.id;
-  }
+  } 
 
   private async addPlayerToGameSession(auth: JWTPayload) {
     // Find user by email
@@ -157,8 +168,8 @@ export class WritingRoom extends Room<WritingGameState> {
     newContent: string,
     roundNumber: number
   ) {
-    // Generate diff using jsdiff
-    const diff = Diff.diffChars(previousContent, newContent);
+      // TODO: Re-enable diff later
+  const diff = Diff.diffChars(previousContent, newContent);
 
     // Create wrapper object with metadata
     const editRecord = {
@@ -166,6 +177,8 @@ export class WritingRoom extends Room<WritingGameState> {
       playerName,
       roundNumber,
       timestamp: new Date().toISOString(),
+      content: newContent,
+      previousContent: previousContent,
       diff,
     };
 
@@ -202,6 +215,9 @@ export class WritingRoom extends Room<WritingGameState> {
     this.state.timerEndsAt = 0;
     this.state.timeRemaining = 0;
     this.state.currentRound = 0;
+    this.state.lobbyCountdownRemaining = 0;
+    this.state.isLobbyCountdownActive = false;
+    this.state.readyOrder.splice(0, this.state.readyOrder.length);
     this.state.stories.clear();
     this.state.currentAssignments.clear();
     console.log("Game initialized in lobby phase");
@@ -212,7 +228,7 @@ export class WritingRoom extends Room<WritingGameState> {
       this.handlePlayerReady(client);
     });
 
-    this.onMessage("backToLobby", (client) => {
+    this.onMessage("backToLobby", () => {
       this.handleBackToLobby();
     });
 
@@ -230,6 +246,130 @@ export class WritingRoom extends Room<WritingGameState> {
 
       this.handleWritingSubmission(client, content);
     });
+  }
+
+  private handlePlayerReady(client: Client) {
+    const currentReadyState =
+      this.state.readyStates.get(client.sessionId) || false;
+    const newReadyState = !currentReadyState;
+
+    this.state.readyStates.set(client.sessionId, newReadyState);
+
+    const player = this.state.players.get(client.sessionId);
+    if (player) {
+      player.isReady = newReadyState;
+    }
+
+    // Update ready order
+    if (newReadyState) {
+      // Add to ready order if not already there
+      if (!this.state.readyOrder.includes(client.sessionId)) {
+        this.state.readyOrder.push(client.sessionId);
+      }
+    } else {
+      // Remove from ready order
+      const index = this.state.readyOrder.indexOf(client.sessionId);
+      if (index > -1) {
+        this.state.readyOrder.splice(index, 1);
+      }
+    }
+
+    console.log(
+      `Player ${client.sessionId} ready state: ${newReadyState}. Ready order:`,
+      this.state.readyOrder
+    );
+    this.checkLobbyStart();
+  }
+
+  private checkLobbyStart() {
+    const minPlayers = GAME_CONFIG.requirements.minPlayers;
+    const currentReadyCount = this.state.readyOrder.length;
+
+    // Not enough players - ensure countdown is stopped
+    if (currentReadyCount < minPlayers) {
+      if (this.state.isLobbyCountdownActive) {
+        this.state.isLobbyCountdownActive = false;
+        this.state.lobbyCountdownRemaining = 0;
+        if (this.lobbyCountdownInterval) {
+          clearInterval(this.lobbyCountdownInterval);
+        }
+        this.broadcast("lobbyCountdownCancelled");
+        console.log("Lobby countdown cancelled - not enough ready players");
+      }
+      return;
+    }
+
+    // Enough players and countdown not already running - start countdown
+    if (!this.state.isLobbyCountdownActive) {
+      this.state.isLobbyCountdownActive = true;
+      this.state.lobbyCountdownRemaining = GAME_CONFIG.timers.lobbyCountdown;
+
+      console.log(
+        `Starting lobby countdown with ${currentReadyCount} ready players`
+      );
+
+      this.currentPhaseTimeout = setTimeout(() => {
+        this.startWritingPhase();
+      }, GAME_CONFIG.timers.lobbyCountdown);
+
+      // Start updating the countdown for clients
+      this.startLobbyCountdownUpdates();
+    }
+  }
+
+  private startLobbyCountdownUpdates() {
+    if (this.lobbyCountdownInterval) {
+      clearInterval(this.lobbyCountdownInterval);
+    }
+
+    this.lobbyCountdownInterval = setInterval(() => {
+      if (!this.state.isLobbyCountdownActive) {
+        clearInterval(this.lobbyCountdownInterval);
+        return;
+      }
+
+      this.state.lobbyCountdownRemaining -= 1000;
+
+      this.broadcast("lobbyCountdownUpdate", {
+        timeRemaining: this.state.lobbyCountdownRemaining,
+        readyPlayers: this.state.readyOrder.length,
+      });
+
+      if (this.state.lobbyCountdownRemaining <= 0) {
+        clearInterval(this.lobbyCountdownInterval);
+      }
+    }, 1000);
+  }
+
+  private handleBackToLobby() {
+    console.log("Resetting game to lobby state");
+
+    // Clear any active timers
+    if (this.currentPhaseTimeout) {
+      clearTimeout(this.currentPhaseTimeout);
+    }
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+    if (this.lobbyCountdownInterval) {
+      clearInterval(this.lobbyCountdownInterval);
+    }
+
+    // Reset game state
+    this.initializeGame();
+
+    // Reset all players
+    this.state.players.forEach((player) => {
+      player.isReady = false;
+      player.hasSubmitted = false;
+    });
+
+    this.state.readyStates.forEach((_, sessionId) => {
+      this.state.readyStates.set(sessionId, false);
+    });
+
+    this.broadcast("gameResetToLobby");
+    console.log("Game reset to lobby");
   }
 
   private async handleWritingSubmission(client: Client, text: string) {
@@ -314,8 +454,12 @@ export class WritingRoom extends Room<WritingGameState> {
   private async startWritingPhase() {
     console.log("Starting writing phase!");
 
+    // Clear any existing timers
     if (this.currentPhaseTimeout) {
       clearTimeout(this.currentPhaseTimeout);
+    }
+    if (this.lobbyCountdownInterval) {
+      clearInterval(this.lobbyCountdownInterval);
     }
 
     // Reset submission states
@@ -344,14 +488,29 @@ export class WritingRoom extends Room<WritingGameState> {
     );
 
     this.currentPhaseTimeout = setTimeout(() => {
-      this.handleRoundCompletion();
+      console.log(
+        "Writing timer expired - auto-submitting for unfinished players"
+      );
+
+      // Auto-submit for any players who haven't submitted
+      this.state.players.forEach((player, sessionId) => {
+        if (!player.hasSubmitted) {
+          console.log(
+            `Auto-submitting empty content for player ${player.playerName}`
+          );
+          const client = this.clients.find((c) => c.sessionId === sessionId);
+          if (client) {
+            this.handleWritingSubmission(client, "");
+          }
+        }
+      });
     }, GAME_CONFIG.timers.writingPhase);
 
     this.startTimerUpdates();
   }
 
   private async initializeStories() {
-    const playersArray = Array.from(this.state.players.values());
+    const readyOrder = this.state.readyOrder;
 
     // Get a random prompt from database (for now, use config - will update later)
     const randomPrompt = this.getRandomPrompt();
@@ -373,8 +532,11 @@ export class WritingRoom extends Room<WritingGameState> {
       data: { usedCount: { increment: 1 } },
     });
 
-    for (let i = 0; i < playersArray.length; i++) {
-      const player = playersArray[i];
+    for (let i = 0; i < readyOrder.length; i++) {
+      const playerSessionId = readyOrder[i];
+      const player = this.state.players.get(playerSessionId);
+
+      if (!player) continue;
 
       // Create story in database
       const dbStory = await this.createStoryInDatabase({
@@ -391,15 +553,70 @@ export class WritingRoom extends Room<WritingGameState> {
       story.currentRound = 0;
 
       this.state.stories.set(story.storyId, story);
-      this.state.currentAssignments.set(player.playerId, story.storyId);
+      this.state.currentAssignments.set(playerSessionId, story.storyId);
 
       console.log(`Player ${player.playerName} starts story: ${story.storyId}`);
     }
   }
 
+  private rotateStoryAssignments() {
+    console.log(
+      "Rotating story assignments for round",
+      this.state.currentRound
+    );
+
+    const readyOrder = this.state.readyOrder;
+    const totalPlayers = readyOrder.length;
+
+    // Create a mapping of which story each player should get
+    // Player at readyOrder[i] gets story from readyOrder[(i - 1 + totalPlayers) % totalPlayers]
+    readyOrder.forEach((playerSessionId, index) => {
+      const previousPlayerIndex = (index - 1 + totalPlayers) % totalPlayers;
+      const previousPlayerSessionId = readyOrder[previousPlayerIndex];
+
+      // Find the story that belonged to the previous player
+      const assignedStoryId = this.state.currentAssignments.get(
+        previousPlayerSessionId
+      );
+
+      if (assignedStoryId) {
+        this.state.currentAssignments.set(playerSessionId, assignedStoryId);
+        const player = this.state.players.get(playerSessionId);
+        const previousPlayer = this.state.players.get(previousPlayerSessionId);
+        console.log(
+          `Player ${player?.playerName} gets story from player ${previousPlayer?.playerName}: ${assignedStoryId}`
+        );
+      } else {
+        console.error(
+          `No story found for previous player ${previousPlayerSessionId}`
+        );
+      }
+    });
+  }
+
+  private startTimerUpdates() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+
+    this.timerInterval = setInterval(() => {
+      const now = Date.now();
+      this.state.timeRemaining = Math.max(0, this.state.timerEndsAt - now);
+
+      // Broadcast timer update to all clients
+      this.broadcast("timerUpdate", {
+        timeRemaining: this.state.timeRemaining,
+        phase: this.state.phase,
+      });
+
+      // Note: Auto-submission is handled by the setTimeout in startWritingPhase
+      // This interval just updates the display
+    }, 1000);
+  }
+
   private async handleRoundCompletion() {
     this.state.currentRound++;
-    const totalRounds = this.state.players.size;
+    const totalRounds = this.state.readyOrder.length;
 
     if (this.state.currentRound < totalRounds) {
       // More rounds to go
@@ -430,6 +647,9 @@ export class WritingRoom extends Room<WritingGameState> {
     if (this.currentPhaseTimeout) {
       clearTimeout(this.currentPhaseTimeout);
     }
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
 
     // Notify clients to move to reading room
     this.broadcast("moveToReadingRoom", {
@@ -442,31 +662,6 @@ export class WritingRoom extends Room<WritingGameState> {
     }, 5000);
   }
 
-  // ADD THESE MISSING METHODS:
-  private checkLobbyStart() {
-    // We'll implement this later - just adding the signature for now
-    console.log("checkLobbyStart called");
-  }
-
-  private handlePlayerReady(client: Client) {
-    // We'll implement this later
-    console.log("handlePlayerReady called for", client.sessionId);
-  }
-
-  private handleBackToLobby() {
-    // We'll implement this later
-    console.log("handleBackToLobby called");
-  }
-
-  private rotateStoryAssignments() {
-    // We'll implement this later
-    console.log("rotateStoryAssignments called");
-  }
-
-  private startTimerUpdates() {
-    // We'll implement this later
-    console.log("startTimerUpdates called");
-  }
   private getRandomPrompt(): string {
     const prompts = GAME_CONFIG.prompts;
     return prompts[Math.floor(Math.random() * prompts.length)];
@@ -478,6 +673,9 @@ export class WritingRoom extends Room<WritingGameState> {
     }
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
+    }
+    if (this.lobbyCountdownInterval) {
+      clearInterval(this.lobbyCountdownInterval);
     }
     console.log("WritingRoom disposed", this.roomId);
   }

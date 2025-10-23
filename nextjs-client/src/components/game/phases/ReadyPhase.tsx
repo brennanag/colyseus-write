@@ -2,23 +2,25 @@
 
 import { WritingGameState, Player } from "../../../schema/WritingGameState";
 
-interface LobbyPhaseProps {
+interface ReadyPhaseProps {
   gameState: WritingGameState;
   currentPlayer: Player | null | undefined;
+  roomId: string;
   onToggleReady: () => void;
   formatTime: (ms: number) => string;
 }
 
 // Updated to use consistent styling and clearer messaging
-export function LobbyPhase({
+export function ReadyPhase({
   gameState,
   currentPlayer,
+  roomId,
   onToggleReady,
   formatTime,
-}: LobbyPhaseProps) {
+}: ReadyPhaseProps) {
   return (
     <div className="text-center py-8">
-      <h3 className="text-2xl font-bold mb-4 --text-secondary">Game Lobby</h3>
+      <h3 className="text-2xl font-bold mb-4 --text-secondary">Room ID: {roomId}</h3>
 
       <p className="mb-6 text-gray-600 max-w-md mx-auto">
         {gameState.timeRemaining > 0

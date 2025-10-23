@@ -21,10 +21,10 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4">
+    <div className="max-w-7xl mx-auto py-8 px-4 ">
       <div className="flex flex-col gap-6">
         {/* Application Header - Consistent across all views */}
-        <AppHeader user={user} onLogout={logout} />
+        <AppHeader user={user} onLogout={logout}  />
 
         {/* Main Content - Routes between different application states */}
         <main>
@@ -41,6 +41,7 @@ export default function Home() {
 interface AppHeaderProps {
   user: { name: string | null; email: string };
   onLogout: () => void;
+  // backToLobby: () => void;
 }
 
 function AppHeader({ user, onLogout }: AppHeaderProps) {
@@ -48,12 +49,19 @@ function AppHeader({ user, onLogout }: AppHeaderProps) {
     <header className="flex justify-between items-center">
       <div>
         <h1 className="text-xl font-semibold --text-secondary">
-          Welcome, {user.name || user.email}!
+          Welcome, {user.name || user.email}
         </h1>
-        <p className="text-sm text-gray-600 mt-1">
+        {/* <p className="text-sm text-gray-600 mt-1">
           Collaborative Writing Platform
-        </p>
+        </p> */}
       </div>
+
+      {/* <button
+        onClick={backToLobby}
+        className="px-4 py-2 border --border-color rounded-md --text-accent hover:--border-color transition-colors"
+      >
+        Lobby
+      </button> */}
       <button
         onClick={onLogout}
         className="px-4 py-2 border --border-color rounded-md --text-secondary hover:--border-color transition-colors"

@@ -13,11 +13,10 @@ export function LobbyEntry({
   return (
     <div className="text-center py-12">
       <h2 className="text-2xl font-bold mb-4 --text-secondary">
-        Welcome to Collaborative Writing
+        Welcome
       </h2>
       <p className="text-gray-600 mb-8 max-w-md mx-auto">
-        Join the lobby to see available writing rooms or create your own.
-        Collaborate with others to build amazing stories together.
+        Join the lobby to collaborate with others to build amazing stories together.
       </p>
       <button
         onClick={onJoinLobby}

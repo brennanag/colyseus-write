@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Client, Room } from "colyseus.js";
 import { GameState } from "@/lib/types";
 import { DebugBar } from "@/components/debug/DebugBar";
-import { LobbyPhase } from "./phases/LobbyPhase";
+import { ReadyPhase } from "./phases/ReadyPhase";
 import { GameSetupPhase } from "./phases/GameSetupPhase";
 import { WritingPhase } from "./phases/WritingPhase";
 import { EditingPhase } from "./phases/EditingPhase";
@@ -151,7 +151,7 @@ export function GameClient({ user }: GameClientProps) {
 
     switch (gameState.phase) {
       case "lobby":
-        return <LobbyPhase players={gameState.players} onReady={handleReady} />;
+        return <ReadyPhase players={gameState.players} onReady={handleReady} />;
 
       case "game_setup":
         return (

@@ -35,8 +35,9 @@ body {
 
 /* Custom component styles */
 .card {
+  color: var(--text-secondary);
   background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  /* border: 1px solid var(--border-color); */
   border-radius: 0.5rem;
   padding: 1rem;
 }

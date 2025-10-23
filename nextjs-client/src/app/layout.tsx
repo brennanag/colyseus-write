@@ -1,9 +1,9 @@
-// Add this to your existing layout file to wrap all providers
 "use client";
 
 import { AuthProvider } from "../contexts/AuthContext";
 import { RoomProvider } from "../contexts/RoomContext";
 import { GameProvider } from "../contexts/GameContext";
+import "./globals.css"; // ← ADD THIS LINE
 
 export default function RootLayout({
   children,

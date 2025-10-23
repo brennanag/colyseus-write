@@ -2,9 +2,10 @@
 
 import { useGame } from "../../contexts/GameContext";
 import { PlayerList } from "./PlayerList";
-import { LobbyPhase } from "../game/phases/LobbyPhase";
+import { ReadyPhase } from "./phases/ReadyPhase";
 import { WritingPhase } from "../game/phases/WritingPhase";
 import { ReadingPhase } from "../game/phases/ReadingPhase";
+import { useRoom } from "@/contexts/RoomContext";
 
 // Main game container that orchestrates all game phases
 export function GameView() {
@@ -21,7 +22,9 @@ export function GameView() {
   } = useGame();
 
   const currentPlayer = getCurrentPlayer();
+  const { currentRoom } = useRoom();
 
+  const roomId = currentRoom?.roomId;
   // Show loading state if game state isn't available yet
   if (!gameState) {
     return (
@@ -39,9 +42,10 @@ export function GameView() {
       {/* Game Phase Content */}
       <div className="card">
         {gameState.phase === "lobby" && (
-          <LobbyPhase
+          <ReadyPhase
             gameState={gameState}
             currentPlayer={currentPlayer}
+            roomId = {roomId}
             onToggleReady={toggleReady}
             formatTime={formatTime}
           />

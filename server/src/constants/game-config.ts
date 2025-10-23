@@ -1,7 +1,7 @@
 export const GAME_CONFIG = {
   timers: {
     lobbyCountdown: 5000, // 5 seconds
-    writingPhase: 120000, // 2 minutes (increased for testing)
+    writingPhase: 30000, // 2 minutes (increased for testing)
     submissionGrace: 30000, // 30 seconds
     betweenRoundsBuffer: 5000, // 5 seconds (increased for DB operations)
   },

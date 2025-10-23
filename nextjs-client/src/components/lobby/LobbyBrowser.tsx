@@ -25,7 +25,7 @@ export function LobbyBrowser() {
       </div>
 
       {/* Create Room Section */}
-      <div className="mb-8 p-6 border --border-color rounded-lg --bg-secondary">
+      <div className="mb-8 p-6 card">
         <h3 className="text-xl font-semibold mb-4 --text-secondary">
           Create New Room
         </h3>
@@ -47,12 +47,12 @@ export function LobbyBrowser() {
 
       {/* Available Rooms Section */}
       <div>
-        <h3 className="text-xl font-semibold mb-4 --text-secondary">
+        <h3 className="text-xl font-semibold mb-4 card">
           Available Rooms
         </h3>
 
         {availableRooms.length === 0 ? (
-          <div className="text-center py-8 border --border-color rounded-lg">
+          <div className="text-center py-8 card">
             <p className="text-gray-600">
               No rooms available yet. Be the first to create one!
             </p>
