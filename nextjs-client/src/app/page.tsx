@@ -2,22 +2,18 @@
 
 import { useAuth } from "../contexts/AuthContext";
 import { useRoom } from "../contexts/RoomContext";
-import { useGame } from "../contexts/GameContext";
 import AuthForms from "../components/AuthForms";
 import { LobbyEntry } from "../components/lobby/LobbyEntry";
 import { LobbyBrowser } from "../components/lobby/LobbyBrowser";
 import { GameView } from "../components/game/GameView";
+import { ReadingView } from "../components/reading/ReadingView"; // NEW IMPORT
 
 /**
  * Main application component - Clean orchestration layer
- *
- * This component now only handles the high-level routing between different
- * application states. All business logic has been moved to dedicated contexts.
  */
 export default function Home() {
-  // Use our clean, separated contexts
   const { user, logout } = useAuth();
-  const { currentRoom, roomType, joinLobby, leaveRoom, isJoining } = useRoom();
+  const { currentRoom, roomType, joinLobby, isJoining } = useRoom();
 
   // Show authentication forms if user is not logged in
   if (!user) {
@@ -73,7 +69,7 @@ function AppHeader({ user, onLogout }: AppHeaderProps) {
  */
 interface MainContentProps {
   currentRoom: any;
-  roomType: "lobby" | "writing_room" | null;
+  roomType: "lobby" | "writing_room" | "reading_room" | null;
   joinLobby: () => void;
   isJoining: boolean;
 }
@@ -97,6 +93,11 @@ function renderMainContent({
   // State 3: In writing room - show game interface
   if (roomType === "writing_room") {
     return <GameView />;
+  }
+
+  // NEW: State 4: In reading room - show reading interface
+  if (roomType === "reading_room") {
+    return <ReadingView />;
   }
 
   // Fallback - should not normally happen

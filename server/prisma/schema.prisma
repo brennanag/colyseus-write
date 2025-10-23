@@ -7,6 +7,112 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// === CORE USER MODEL ===
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  gameParticipants GameParticipant[]
+  authoredPrompts  Prompt[]           // Users can create prompts later
+  autoSaves        AutoSave[]
+
+  @@map("users")
+}
+
+// === PROMPT SYSTEM ===
+model Prompt {
+  id        String   @id @default(cuid())
+  text      String   // The actual prompt text
+  usedCount Int      @default(0)     // How many times this prompt has been used
+  createdAt DateTime @default(now())
+  
+  // Optional: Track who created the prompt (for future features)
+  creatorId String?
+  creator   User?    @relation(fields: [creatorId], references: [id])
+
+  // Relationships
+  stories   Story[]
+
+  @@map("prompts")
+}
+
+// === GAME SESSIONS ===
+model GameSession {
+  id          String   @id @default(cuid())
+  roomId      String   @unique  // Colyseus room ID for this session
+  status      String   // "active", "completed", "cancelled"
+  createdAt   DateTime @default(now())
+  completedAt DateTime? // When the game finished
+  
+  // Relationships
+  participants GameParticipant[]
+  stories      Story[]
+
+  @@map("game_sessions")
+}
+
+// === GAME PARTICIPATION TRACKING ===
+model GameParticipant {
+  id             String @id @default(cuid())
+  gameSessionId  String
+  playerId       String  // References User.id
+  joinedAt       DateTime @default(now())
+
+  // Relationships
+  gameSession GameSession @relation(fields: [gameSessionId], references: [id])
+  player      User        @relation(fields: [playerId], references: [id])
+
+  @@unique([gameSessionId, playerId]) // Prevent duplicate joins
+  @@map("game_participants")
+}
+
+// === STORIES - CORE OF THE GAME ===
+model Story {
+  id             String   @id @default(cuid())
+  gameSessionId  String
+  promptId       String
+  orderIndex     Int      // Which story in the game (0, 1, 2...)
+  
+  // Story content and history
+  accumulatedContent String   // Current full story text (for quick reading)
+  editHistory    Json       // Array of edit objects with player attribution + diffs
+  
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt  // Last time story was modified
+
+  // Relationships
+  gameSession GameSession @relation(fields: [gameSessionId], references: [id])
+  prompt      Prompt      @relation(fields: [promptId], references: [id])
+
+  @@map("stories")
+}
+
+// === AUTO-SAVE SYSTEM ===
+model AutoSave {
+  id          String   @id @default(cuid())
+  roomId      String   // Colyseus room ID
+  playerId    String   // User ID
+  content     String   // Current draft content
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  player User @relation(fields: [playerId], references: [id])
+
+  @@unique([roomId, playerId]) // One auto-save per player per room
+  @@map("auto_saves")
+}
+
+// === LEGACY MODELS TO REMOVE LATER ===
+// These models are from the old schema but we'll keep them for now
+// to avoid breaking changes. We can remove them after migration.
+
 model Player {
   id          String       @id @default(cuid())
   createdAt   DateTime     @default(now())
@@ -76,27 +182,4 @@ model Vote {
 
   @@unique([submissionId, voterId])
   @@map("votes")
-}
-
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("users")
-}
-
-model AutoSave {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  roomId      String
-  playerId    String
-  content     String
-
-  @@unique([roomId, playerId]) // Simplified - one auto-save per player per room
-  @@map("auto_saves")
 }

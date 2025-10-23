@@ -3,13 +3,14 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { Room } from "colyseus.js";
 import { useAuth } from "./AuthContext";
-import { WritingGameState } from "../schema/WritingGameState";
 
-// Room context manages room connections and room listing
+// Extended room type to handle reading room
+type RoomType = "lobby" | "writing_room" | "reading_room" | null;
+
 interface RoomContextType {
   // Current room state
   currentRoom: Room<any> | null;
-  roomType: "lobby" | "writing_room" | null;
+  roomType: RoomType;
 
   // Room discovery
   availableRooms: any[];
@@ -18,6 +19,7 @@ interface RoomContextType {
   joinLobby: () => Promise<void>;
   joinWritingRoom: (roomId: string) => Promise<void>;
   createWritingRoom: (options?: any) => Promise<void>;
+  joinReadingRoom: (gameSessionId?: string) => Promise<void>; // NEW
   leaveRoom: () => Promise<void>;
 
   // Loading states
@@ -35,11 +37,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   const [isCreating, setIsCreating] = useState(false);
 
   // Determine room type based on current room
-  const roomType = currentRoom
-    ? currentRoom.name === "lobby"
-      ? "lobby"
-      : "writing_room"
-    : null;
+  const roomType = currentRoom ? (currentRoom.name as RoomType) : null;
 
   // Join the global lobby to see available rooms
   const joinLobby = async () => {
@@ -69,9 +67,43 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     try {
       setIsJoining(true);
       const gameRoom = await client.joinById(roomId);
+
+      // Listen for move to reading room message
+      gameRoom.onMessage("moveToReadingRoom", (message) => {
+        console.log(
+          "Moving to reading room for game session:",
+          message.gameSessionId
+        );
+        joinReadingRoom(message.gameSessionId);
+      });
+
       setCurrentRoom(gameRoom);
     } catch (error) {
       console.error("Failed to join game room:", error);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  // NEW: Join reading room
+  const joinReadingRoom = async (gameSessionId?: string) => {
+    if (!client) return;
+
+    try {
+      setIsJoining(true);
+
+      // Leave current room if we're in one
+      if (currentRoom) {
+        await currentRoom.leave();
+      }
+
+      const readingRoom = await client.joinOrCreate("reading_room", {
+        gameSessionId, // Optional: specific game session to focus on
+      });
+
+      setCurrentRoom(readingRoom);
+    } catch (error) {
+      console.error("Failed to join reading room:", error);
     } finally {
       setIsJoining(false);
     }
@@ -90,6 +122,16 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       };
 
       const gameRoom = await client.create("writing_room", defaultOptions);
+
+      // Listen for move to reading room message
+      gameRoom.onMessage("moveToReadingRoom", (message) => {
+        console.log(
+          "Moving to reading room for game session:",
+          message.gameSessionId
+        );
+        joinReadingRoom(message.gameSessionId);
+      });
+
       setCurrentRoom(gameRoom);
     } catch (error) {
       console.error("Failed to create room:", error);
@@ -116,6 +158,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         joinLobby,
         joinWritingRoom,
         createWritingRoom,
+        joinReadingRoom, // NEW
         leaveRoom,
         isJoining,
         isCreating,
