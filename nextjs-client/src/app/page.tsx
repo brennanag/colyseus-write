@@ -52,9 +52,9 @@ function AppHeader({ user, onLogout }: AppHeaderProps) {
         <h1 className="text-xl font-semibold --text-secondary">
           Welcome, {user.name || user.email}
         </h1>
-        <p className="text-sm text-gray-600 mt-1">
+        {/* <p className="text-sm text-gray-600 mt-1">
           phase: {roomType}
-        </p>
+        </p> */}
       </div>
 
       {/* <button

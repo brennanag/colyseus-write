@@ -20,15 +20,15 @@ export class Story extends Schema {
 }
 
 export class WritingGameState extends Schema {
-  @type("string") phase: string = "lobby"; // "lobby", "writing", "betweenRounds", "reading"
+  @type("string") phase: string = "ready"; // "ready", "writing", "betweenRounds", "reading"
   @type("number") timerEndsAt: number = 0;
   @type("number") timeRemaining: number = 0;
   @type("number") currentRound: number = 0;
   
-  // Lobby state
+  // ready state
   @type(["string"]) readyOrder = new ArraySchema<string>();
-  @type("number") lobbyCountdownRemaining: number = 0;
-  @type("boolean") isLobbyCountdownActive: boolean = false;
+  @type("number") readyCountdownRemaining: number = 0;
+  @type("boolean") isReadyCountdownActive: boolean = false;
   
   // Players and their states
   @type({ map: Player }) players = new MapSchema<Player>();

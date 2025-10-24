@@ -20,7 +20,7 @@ interface CreateStoryData {
 export class WritingRoom extends Room<WritingGameState> {
   private currentPhaseTimeout!: NodeJS.Timeout;
   private timerInterval!: NodeJS.Timeout;
-  private lobbyCountdownInterval!: NodeJS.Timeout;
+  private readyCountdownInterval!: NodeJS.Timeout;
   private gameSessionId!: string;
   maxClients = GAME_CONFIG.requirements.maxPlayers;
 
@@ -109,8 +109,8 @@ export class WritingRoom extends Room<WritingGameState> {
       }
     }
 
-    if (this.state.phase === "lobby") {
-      this.checkLobbyStart();
+    if (this.state.phase === "ready") {
+      this.checkReadyStart();
     }
   }
 
@@ -211,16 +211,16 @@ export class WritingRoom extends Room<WritingGameState> {
   // === GAME LOGIC (UPDATED FOR NEW STORAGE) ===
 
   private initializeGame() {
-    this.state.phase = "lobby";
+    this.state.phase = "ready";
     this.state.timerEndsAt = 0;
     this.state.timeRemaining = 0;
     this.state.currentRound = 0;
-    this.state.lobbyCountdownRemaining = 0;
-    this.state.isLobbyCountdownActive = false;
+    this.state.readyCountdownRemaining = 0;
+    this.state.isReadyCountdownActive = false;
     this.state.readyOrder.splice(0, this.state.readyOrder.length);
     this.state.stories.clear();
     this.state.currentAssignments.clear();
-    console.log("Game initialized in lobby phase");
+    console.log("Game initialized in ready phase");
   }
 
   private setupMessageHandlers() {
@@ -228,8 +228,8 @@ export class WritingRoom extends Room<WritingGameState> {
       this.handlePlayerReady(client);
     });
 
-    this.onMessage("backToLobby", () => {
-      this.handleBackToLobby();
+    this.onMessage("backToready", () => {
+      this.handleBackToready();
     });
 
     this.onMessage("submitWriting", (client, message) => {
@@ -278,71 +278,71 @@ export class WritingRoom extends Room<WritingGameState> {
       `Player ${client.sessionId} ready state: ${newReadyState}. Ready order:`,
       this.state.readyOrder
     );
-    this.checkLobbyStart();
+    this.checkReadyStart();
   }
 
-  private checkLobbyStart() {
+  private checkReadyStart() {
     const minPlayers = GAME_CONFIG.requirements.minPlayers;
     const currentReadyCount = this.state.readyOrder.length;
 
     // Not enough players - ensure countdown is stopped
     if (currentReadyCount < minPlayers) {
-      if (this.state.isLobbyCountdownActive) {
-        this.state.isLobbyCountdownActive = false;
-        this.state.lobbyCountdownRemaining = 0;
-        if (this.lobbyCountdownInterval) {
-          clearInterval(this.lobbyCountdownInterval);
+      if (this.state.isReadyCountdownActive) {
+        this.state.isReadyCountdownActive = false;
+        this.state.readyCountdownRemaining = 0;
+        if (this.readyCountdownInterval) {
+          clearInterval(this.readyCountdownInterval);
         }
-        this.broadcast("lobbyCountdownCancelled");
-        console.log("Lobby countdown cancelled - not enough ready players");
+        this.broadcast("readyCountdownCancelled");
+        console.log("ready countdown cancelled - not enough ready players");
       }
       return;
     }
 
     // Enough players and countdown not already running - start countdown
-    if (!this.state.isLobbyCountdownActive) {
-      this.state.isLobbyCountdownActive = true;
-      this.state.lobbyCountdownRemaining = GAME_CONFIG.timers.lobbyCountdown;
+    if (!this.state.isReadyCountdownActive) {
+      this.state.isReadyCountdownActive = true;
+      this.state.readyCountdownRemaining = GAME_CONFIG.timers.readyCountdown;
 
       console.log(
-        `Starting lobby countdown with ${currentReadyCount} ready players`
+        `Starting ready countdown with ${currentReadyCount} ready players`
       );
 
       this.currentPhaseTimeout = setTimeout(() => {
         this.startWritingPhase();
-      }, GAME_CONFIG.timers.lobbyCountdown);
+      }, GAME_CONFIG.timers.readyCountdown);
 
       // Start updating the countdown for clients
-      this.startLobbyCountdownUpdates();
+      this.startreadyCountdownUpdates();
     }
   }
 
-  private startLobbyCountdownUpdates() {
-    if (this.lobbyCountdownInterval) {
-      clearInterval(this.lobbyCountdownInterval);
+  private startreadyCountdownUpdates() {
+    if (this.readyCountdownInterval) {
+      clearInterval(this.readyCountdownInterval);
     }
 
-    this.lobbyCountdownInterval = setInterval(() => {
-      if (!this.state.isLobbyCountdownActive) {
-        clearInterval(this.lobbyCountdownInterval);
+    this.readyCountdownInterval = setInterval(() => {
+      if (!this.state.isReadyCountdownActive) {
+        clearInterval(this.readyCountdownInterval);
         return;
       }
 
-      this.state.lobbyCountdownRemaining -= 1000;
+      this.state.readyCountdownRemaining -= 1000;
 
-      this.broadcast("lobbyCountdownUpdate", {
-        timeRemaining: this.state.lobbyCountdownRemaining,
+      this.broadcast("readyCountdownUpdate", {
+        timeRemaining: this.state.readyCountdownRemaining,
         readyPlayers: this.state.readyOrder.length,
       });
 
-      if (this.state.lobbyCountdownRemaining <= 0) {
-        clearInterval(this.lobbyCountdownInterval);
+      if (this.state.readyCountdownRemaining <= 0) {
+        clearInterval(this.readyCountdownInterval);
       }
     }, 1000);
   }
 
-  private handleBackToLobby() {
-    console.log("Resetting game to lobby state");
+  private handleBackToready() {
+    console.log("Resetting game to ready state");
 
     // Clear any active timers
     if (this.currentPhaseTimeout) {
@@ -351,8 +351,8 @@ export class WritingRoom extends Room<WritingGameState> {
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
     }
-    if (this.lobbyCountdownInterval) {
-      clearInterval(this.lobbyCountdownInterval);
+    if (this.readyCountdownInterval) {
+      clearInterval(this.readyCountdownInterval);
     }
 
     // Reset game state
@@ -368,8 +368,8 @@ export class WritingRoom extends Room<WritingGameState> {
       this.state.readyStates.set(sessionId, false);
     });
 
-    this.broadcast("gameResetToLobby");
-    console.log("Game reset to lobby");
+    this.broadcast("gameResetToready");
+    console.log("Game reset to ready");
   }
 
   private async handleWritingSubmission(client: Client, text: string) {
@@ -458,8 +458,8 @@ export class WritingRoom extends Room<WritingGameState> {
     if (this.currentPhaseTimeout) {
       clearTimeout(this.currentPhaseTimeout);
     }
-    if (this.lobbyCountdownInterval) {
-      clearInterval(this.lobbyCountdownInterval);
+    if (this.readyCountdownInterval) {
+      clearInterval(this.readyCountdownInterval);
     }
 
     // Reset submission states
@@ -674,8 +674,8 @@ export class WritingRoom extends Room<WritingGameState> {
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
     }
-    if (this.lobbyCountdownInterval) {
-      clearInterval(this.lobbyCountdownInterval);
+    if (this.readyCountdownInterval) {
+      clearInterval(this.readyCountdownInterval);
     }
     console.log("WritingRoom disposed", this.roomId);
   }

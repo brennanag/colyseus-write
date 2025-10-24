@@ -41,7 +41,7 @@ export function GameView() {
 
       {/* Game Phase Content */}
       <div className="card">
-        {gameState.phase === "lobby" && (
+        {gameState.phase === "ready" && (
           <ReadyPhase
             gameState={gameState}
             currentPlayer={currentPlayer}

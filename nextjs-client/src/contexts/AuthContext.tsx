@@ -23,8 +23,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Enhanced AuthContext.tsx - preserves login across refreshes
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  // Load user from localStorage on initial render
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("colyseus-user");
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
 
   const register = async (email: string, password: string, name: string) => {
     const response = await client.auth.registerWithEmailAndPassword(
@@ -33,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { name }
     );
     setUser(response.user);
+    localStorage.setItem("colyseus-user", JSON.stringify(response.user));
   };
 
   const login = async (email: string, password: string) => {
@@ -41,11 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password
     );
     setUser(response.user);
+    localStorage.setItem("colyseus-user", JSON.stringify(response.user));
   };
 
   const logout = async () => {
     await client.auth.signOut();
     setUser(null);
+    localStorage.removeItem("colyseus-user");
+    localStorage.removeItem("colyseus-last-room"); // Also clear room info
   };
 
   return (
