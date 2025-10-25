@@ -4,6 +4,7 @@ export const GAME_CONFIG = {
     writingPhase: 30000, // 2 minutes (increased for testing)
     submissionGrace: 30000, // 30 seconds
     betweenRoundsBuffer: 5000, // 5 seconds (increased for DB operations)
+    roomEmptyGracePeriod: 300000, // NEW: 5 minutes in milliseconds
   },
   requirements: {
     minPlayers: 2,

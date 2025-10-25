@@ -87,6 +87,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Toggle player ready status
   const toggleReady = () => {
+    console.log("Toggling ready status");
     if (!currentRoom) return;
     currentRoom.send("toggleReady", {});
   };

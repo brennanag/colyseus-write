@@ -18,10 +18,12 @@ interface CreateStoryData {
 }
 
 export class WritingRoom extends Room<WritingGameState> {
-  private currentPhaseTimeout!: NodeJS.Timeout;
-  private timerInterval!: NodeJS.Timeout;
-  private readyCountdownInterval!: NodeJS.Timeout;
+  private currentPhaseTimeout!: any;
+  private timerInterval!: any;
+  private readyCountdownInterval!: any;
+  private emptyRoomTimeout!: any; // NEW: For room persistence
   private gameSessionId!: string;
+  private roomCreatedAt!: number; // NEW: Track room creation time
   maxClients = GAME_CONFIG.requirements.maxPlayers;
 
   static async onAuth(token: string) {
@@ -36,64 +38,129 @@ export class WritingRoom extends Room<WritingGameState> {
   async onCreate() {
     console.log("WritingRoom created!", this.roomId);
 
+    // NEW: Initialize room clock and creation time
+    this.clock.start();
+    this.roomCreatedAt = Date.now();
+
     // Create game session in database
     this.gameSessionId = await this.createGameSession();
 
     this.setState(new WritingGameState());
     this.initializeGame();
     this.setupMessageHandlers();
+
+    console.log(
+      `Room ${this.roomId} will persist for ${
+        GAME_CONFIG.timers.roomEmptyGracePeriod / 1000 / 60
+      } minutes when empty`
+    );
   }
 
   async onJoin(client: Client, options: any, auth: JWTPayload) {
     console.log("Authenticated user joined:", auth.email);
 
-    // Add player to database game session
-    await this.addPlayerToGameSession(auth);
+    // Cancel any pending room disposal when player joins
+    if (this.emptyRoomTimeout) {
+      this.emptyRoomTimeout.clear();
+      this.emptyRoomTimeout = null;
+      console.log(`Cancelled room disposal - player joined ${this.roomId}`);
+    }
 
-    // Duplicate login prevention and player setup (existing logic)
+    try {
+      // Add player to database game session (handles duplicates internally)
+      await this.addPlayerToGameSession(auth);
+    } catch (error) {
+      console.error("Error adding player to game session:", error);
+      // Don't fail the join if database has issues - allow gameplay to continue
+    }
+
+    // Check for existing player with same email (reconnection case)
+    let existingSessionId: string | null = null;
     this.state.players.forEach((existingPlayer, sessionId) => {
-      if (
-        existingPlayer.email === auth.email &&
-        sessionId !== client.sessionId
-      ) {
-        console.log(`Kicking duplicate login for ${auth.email}`);
-        const existingClient = this.clients.find(
-          (c) => c.sessionId === sessionId
-        );
-        if (existingClient) {
-          existingClient.leave(1000, "Logged in from another location");
-        }
-        this.state.players.delete(sessionId);
-        this.state.readyStates.delete(sessionId);
-
-        // Remove from readyOrder if present
-        const readyIndex = this.state.readyOrder.indexOf(sessionId);
-        if (readyIndex > -1) {
-          this.state.readyOrder.splice(readyIndex, 1);
-        }
+      if (existingPlayer.email === auth.email) {
+        existingSessionId = sessionId;
       }
     });
 
-    // Create player with new game properties
-    const player = new Player();
-    player.playerId = client.sessionId;
-    player.playerName = auth.name || auth.email;
-    player.email = auth.email;
-    player.isAuthenticated = true;
-    player.isReady = false;
-    player.hasSubmitted = false;
+    // If player exists with same email but different session, update their session ID
+    if (existingSessionId && existingSessionId !== client.sessionId) {
+      console.log(`Player ${auth.email} reconnecting with new session`);
 
-    this.state.players.set(client.sessionId, player);
-    this.state.readyStates.set(client.sessionId, false);
+      const existingPlayer = this.state.players.get(existingSessionId);
+      if (existingPlayer) {
+        // Transfer player data to new session
+        this.state.players.set(client.sessionId, existingPlayer);
+        this.state.players.delete(existingSessionId);
 
-    console.log(
-      `Player ${auth.email} added. Total players: ${this.state.players.size}`
-    );
+        // Update ready states
+        const wasReady = this.state.readyStates.get(existingSessionId) || false;
+        this.state.readyStates.set(client.sessionId, wasReady);
+        this.state.readyStates.delete(existingSessionId);
+
+        // Update assignments
+        const assignedStory =
+          this.state.currentAssignments.get(existingSessionId);
+        if (assignedStory) {
+          this.state.currentAssignments.set(client.sessionId, assignedStory);
+          this.state.currentAssignments.delete(existingSessionId);
+        }
+
+        // Update ready order
+        const readyIndex = this.state.readyOrder.indexOf(existingSessionId);
+        if (readyIndex > -1) {
+          this.state.readyOrder[readyIndex] = client.sessionId;
+        }
+
+        console.log(
+          `Updated player ${auth.email} from session ${existingSessionId} to ${client.sessionId}`
+        );
+      }
+    } else if (!existingSessionId) {
+      // New player (not reconnection)
+      console.log(`New player ${auth.email} joining`);
+
+      const player = new Player();
+      player.playerId = client.sessionId;
+      player.playerName = auth.name || auth.email;
+      player.email = auth.email;
+      player.isAuthenticated = true;
+      player.isReady = false;
+      player.hasSubmitted = false;
+
+      this.state.players.set(client.sessionId, player);
+      this.state.readyStates.set(client.sessionId, false);
+    }
+
+    // console.log(
+    //   `Player ${auth.email} processed. Total players: ${this.state.players.size}`
+    // );
   }
 
-  async onLeave(client: Client) {
-    console.log("Player left:", client.sessionId);
+  async onLeave(client: Client, consented: boolean) {
+    console.log(
+      `Player ${client.sessionId} left the room. Consented: ${consented}`
+    );
 
+    // For refresh/page close, allow reconnection for a short time
+    if (!consented) {
+      console.log(`Allowing reconnection for player ${client.sessionId}`);
+
+      try {
+        // Allow 30 seconds for reconnection
+        const reconnection = await this.allowReconnection(client, 30);
+        console.log(`Player ${client.sessionId} reconnected successfully`);
+
+        // Player reconnected - no further action needed
+        return;
+      } catch (error) {
+        console.log(
+          `Player ${client.sessionId} failed to reconnect within timeout`
+        );
+        // Continue with normal leave processing
+      }
+    }
+
+    // Only remove player if they didn't reconnect
     if (this.state.players.has(client.sessionId)) {
       const player = this.state.players.get(client.sessionId);
       console.log(`Removing player ${player?.email} from room`);
@@ -112,10 +179,40 @@ export class WritingRoom extends Room<WritingGameState> {
     if (this.state.phase === "ready") {
       this.checkReadyStart();
     }
+
+    // Schedule room disposal if room becomes empty
+    if (this.state.players.size === 0) {
+      this.scheduleRoomDisposal();
+    }
   }
 
-  // === DATABASE METHODS ===
+  // NEW: Room persistence logic
+  private scheduleRoomDisposal() {
+    const elapsed = Date.now() - this.roomCreatedAt;
+    const gracePeriod = GAME_CONFIG.timers.roomEmptyGracePeriod;
 
+    // If room has existed longer than grace period, dispose immediately
+    if (elapsed >= gracePeriod) {
+      console.log(`Room ${this.roomId} empty after grace period - disposing`);
+      this.disconnect();
+      return;
+    }
+
+    // Otherwise, wait for remaining grace period using Colyseus clock
+    const remainingTime = gracePeriod - elapsed;
+    console.log(
+      `Room ${this.roomId} empty - will dispose in ${Math.round(
+        remainingTime / 1000
+      )} seconds`
+    );
+
+    this.emptyRoomTimeout = this.clock.setTimeout(() => {
+      console.log(`Room ${this.roomId} grace period expired - disposing`);
+      this.disconnect();
+    }, remainingTime);
+  }
+
+  // === PRESERVE ALL EXISTING DATABASE METHODS ===
   private async createGameSession(): Promise<string> {
     const gameSession = await prisma.gameSession.create({
       data: {
@@ -125,7 +222,7 @@ export class WritingRoom extends Room<WritingGameState> {
     });
     console.log("Game session created:", gameSession.id);
     return gameSession.id;
-  } 
+  }
 
   private async addPlayerToGameSession(auth: JWTPayload) {
     // Find user by email
@@ -138,6 +235,22 @@ export class WritingRoom extends Room<WritingGameState> {
       return;
     }
 
+    // NEW: Check if player is already in the game session (reconnection case)
+    const existingParticipant = await prisma.gameParticipant.findFirst({
+      where: {
+        gameSessionId: this.gameSessionId,
+        playerId: user.id,
+      },
+    });
+
+    if (existingParticipant) {
+      console.log(
+        `Player ${auth.email} already in game session - reconnecting`
+      );
+      return; // Player already exists, no need to create duplicate
+    }
+
+    // Only create new participant if they don't already exist
     await prisma.gameParticipant.create({
       data: {
         gameSessionId: this.gameSessionId,
@@ -168,8 +281,8 @@ export class WritingRoom extends Room<WritingGameState> {
     newContent: string,
     roundNumber: number
   ) {
-      // TODO: Re-enable diff later
-  const diff = Diff.diffChars(previousContent, newContent);
+    // TODO: Re-enable diff later
+    const diff = Diff.diffChars(previousContent, newContent);
 
     // Create wrapper object with metadata
     const editRecord = {
@@ -208,8 +321,7 @@ export class WritingRoom extends Room<WritingGameState> {
     console.log("Game session marked as completed:", this.gameSessionId);
   }
 
-  // === GAME LOGIC (UPDATED FOR NEW STORAGE) ===
-
+  // === PRESERVE ALL EXISTING GAME LOGIC ===
   private initializeGame() {
     this.state.phase = "ready";
     this.state.timerEndsAt = 0;
@@ -249,15 +361,30 @@ export class WritingRoom extends Room<WritingGameState> {
   }
 
   private handlePlayerReady(client: Client) {
+    console.log(`Toggling ready state for player ${client.sessionId}`);
+
     const currentReadyState =
       this.state.readyStates.get(client.sessionId) || false;
     const newReadyState = !currentReadyState;
+
+    // DEBUG: Log the state change
+    console.log("=== DEBUG: handlePlayerReady ===");
+    console.log("Client session:", client.sessionId);
+    console.log("Ready state:", currentReadyState, "→", newReadyState);
 
     this.state.readyStates.set(client.sessionId, newReadyState);
 
     const player = this.state.players.get(client.sessionId);
     if (player) {
+      // DEBUG: Log player before update
+      console.log("Player before update - isReady:", player.isReady);
+
       player.isReady = newReadyState;
+
+      // DEBUG: Log player after update
+      console.log("Player after update - isReady:", player.isReady);
+    } else {
+      console.error("ERROR: Player not found for session:", client.sessionId);
     }
 
     // Update ready order
@@ -308,7 +435,7 @@ export class WritingRoom extends Room<WritingGameState> {
         `Starting ready countdown with ${currentReadyCount} ready players`
       );
 
-      this.currentPhaseTimeout = setTimeout(() => {
+      this.currentPhaseTimeout = this.clock.setTimeout(() => {
         this.startWritingPhase();
       }, GAME_CONFIG.timers.readyCountdown);
 
@@ -322,9 +449,9 @@ export class WritingRoom extends Room<WritingGameState> {
       clearInterval(this.readyCountdownInterval);
     }
 
-    this.readyCountdownInterval = setInterval(() => {
+    this.readyCountdownInterval = this.clock.setInterval(() => {
       if (!this.state.isReadyCountdownActive) {
-        clearInterval(this.readyCountdownInterval);
+        this.readyCountdownInterval.clear();
         return;
       }
 
@@ -336,7 +463,7 @@ export class WritingRoom extends Room<WritingGameState> {
       });
 
       if (this.state.readyCountdownRemaining <= 0) {
-        clearInterval(this.readyCountdownInterval);
+        this.readyCountdownInterval.clear();
       }
     }, 1000);
   }
@@ -346,13 +473,16 @@ export class WritingRoom extends Room<WritingGameState> {
 
     // Clear any active timers
     if (this.currentPhaseTimeout) {
-      clearTimeout(this.currentPhaseTimeout);
+      this.currentPhaseTimeout.clear();
     }
     if (this.timerInterval) {
-      clearInterval(this.timerInterval);
+      this.timerInterval.clear();
     }
     if (this.readyCountdownInterval) {
-      clearInterval(this.readyCountdownInterval);
+      this.readyCountdownInterval.clear();
+    }
+    if (this.emptyRoomTimeout) {
+      this.emptyRoomTimeout.clear();
     }
 
     // Reset game state
@@ -445,7 +575,7 @@ export class WritingRoom extends Room<WritingGameState> {
         "All players have submitted! Moving to next round or reading."
       );
       if (this.currentPhaseTimeout) {
-        clearTimeout(this.currentPhaseTimeout);
+        this.currentPhaseTimeout.clear();
       }
       this.handleRoundCompletion();
     }
@@ -456,10 +586,13 @@ export class WritingRoom extends Room<WritingGameState> {
 
     // Clear any existing timers
     if (this.currentPhaseTimeout) {
-      clearTimeout(this.currentPhaseTimeout);
+      this.currentPhaseTimeout.clear();
     }
     if (this.readyCountdownInterval) {
-      clearInterval(this.readyCountdownInterval);
+      this.readyCountdownInterval.clear();
+    }
+    if (this.emptyRoomTimeout) {
+      this.emptyRoomTimeout.clear();
     }
 
     // Reset submission states
@@ -487,7 +620,7 @@ export class WritingRoom extends Room<WritingGameState> {
       } stories`
     );
 
-    this.currentPhaseTimeout = setTimeout(() => {
+    this.currentPhaseTimeout = this.clock.setTimeout(() => {
       console.log(
         "Writing timer expired - auto-submitting for unfinished players"
       );
@@ -596,10 +729,10 @@ export class WritingRoom extends Room<WritingGameState> {
 
   private startTimerUpdates() {
     if (this.timerInterval) {
-      clearInterval(this.timerInterval);
+      this.timerInterval.clear();
     }
 
-    this.timerInterval = setInterval(() => {
+    this.timerInterval = this.clock.setInterval(() => {
       const now = Date.now();
       this.state.timeRemaining = Math.max(0, this.state.timerEndsAt - now);
 
@@ -628,7 +761,7 @@ export class WritingRoom extends Room<WritingGameState> {
       this.state.timerEndsAt = 0;
       this.state.timeRemaining = 0;
 
-      this.currentPhaseTimeout = setTimeout(() => {
+      this.currentPhaseTimeout = this.clock.setTimeout(() => {
         this.startWritingPhase();
       }, GAME_CONFIG.timers.betweenRoundsBuffer);
     } else {
@@ -645,10 +778,13 @@ export class WritingRoom extends Room<WritingGameState> {
     console.log("Starting reading phase - preparing to move to reading room");
 
     if (this.currentPhaseTimeout) {
-      clearTimeout(this.currentPhaseTimeout);
+      this.currentPhaseTimeout.clear();
     }
     if (this.timerInterval) {
-      clearInterval(this.timerInterval);
+      this.timerInterval.clear();
+    }
+    if (this.emptyRoomTimeout) {
+      this.emptyRoomTimeout.clear();
     }
 
     // Notify clients to move to reading room
@@ -657,7 +793,7 @@ export class WritingRoom extends Room<WritingGameState> {
     });
 
     // Close this room after a brief delay to allow clients to transition
-    setTimeout(() => {
+    this.clock.setTimeout(() => {
       this.disconnect();
     }, 5000);
   }
@@ -668,15 +804,7 @@ export class WritingRoom extends Room<WritingGameState> {
   }
 
   onDispose() {
-    if (this.currentPhaseTimeout) {
-      clearTimeout(this.currentPhaseTimeout);
-    }
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-    }
-    if (this.readyCountdownInterval) {
-      clearInterval(this.readyCountdownInterval);
-    }
+    // All timers are automatically cleared by Colyseus clock
     console.log("WritingRoom disposed", this.roomId);
   }
 }

@@ -18,6 +18,7 @@ export function ReadyPhase({
   onToggleReady,
   formatTime,
 }: ReadyPhaseProps) {
+  console.log("player ready? ", currentPlayer?.isReady);
   return (
     <div className="text-center py-8">
       <h3 className="text-2xl font-bold mb-4 --text-secondary">Room ID: {roomId}</h3>

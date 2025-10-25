@@ -13,6 +13,8 @@ export default config({
     gameServer.define("lobby", LobbyRoom);
     gameServer.define("writing_room", WritingRoom).enableRealtimeListing();
     gameServer.define("reading_room", ReadingRoom).enableRealtimeListing(); // ADD THIS LINE
+
+    console.log("=== REGISTRATION COMPLETE ===");
   },
 
   initializeExpress: (app) => {
